@@ -1,0 +1,55 @@
+data:
+  path: /raid/public/imagenet/train
+  size:
+    - 128
+    - 128
+  mode: "RGB"
+  interpolation: 2
+  is_test: false
+
+mae_encoder:
+  name: VIT
+  image_size:
+    - 128
+    - 128
+  patch_size: 8
+  num_layers: 8
+  num_heads: 8
+  hidden_dim: 256
+  mlp_dim: 1024
+  mask_ratio: 0.75
+  num_classes: null
+  in_channels: 3
+  first_stride: 2
+  last_pool: token
+  last_stride: 4
+  use_sincos_pos_token: True
+
+mae_decoder:
+  name: MAEDecoder
+  image_size:
+    - 128
+    - 128
+  patch_size: 8
+  channels: 3
+  encoder_dim: 256
+  decoder_dim: 512
+  mlp_dim: 2048
+  num_layers: 4
+  num_heads: 16
+
+trainer:
+  accumulate_grad_batches: 1
+  batch_size_per_gpu: 512
+  epochs: 100
+  logger_frequency: 20
+  mixed_precision: true
+  optimizer:
+    name: "adamw"
+    lr: 0.0002
+    lr_end: 0.0001
+    lr_max: 0.0002
+    weight_decay: 0.1
+    warmup: 0.02
+  seed: 46
+  workers_per_gpu: 16

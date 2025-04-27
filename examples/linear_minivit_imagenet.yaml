@@ -1,0 +1,57 @@
+data:
+  path: /raid/public/imagenet/train
+  size:
+    - 128
+    - 128
+  mode: "RGB"
+  interpolation: 2
+  is_test: False
+
+data_test:
+  path: /raid/public/imagenet/validation
+  size:
+    - 128
+    - 128
+  mode: "RGB"
+  interpolation: 2
+  is_test: true
+
+backbone:
+  name: VIT
+  image_size:
+    - 128
+    - 128
+  patch_size: 8
+  num_layers: 8
+  num_heads: 8
+  hidden_dim: 256
+  mlp_dim: 1024
+  mask_ratio: 0.0
+  num_classes: 1000
+  in_channels: 3
+  first_stride: 2
+  last_pool: token
+  last_stride: 4
+  use_sincos_pos_token: True
+
+  mode: linear
+  skip_freeze_prefixes:
+    - head
+  path_to_checkpoint: "./checkpoints/mae_minivit_imagenet_epoch=99.ckpt"
+
+trainer:
+  accumulate_grad_batches: 1
+  batch_size_per_gpu: 256
+  epochs: 100
+  logger_frequency: 20
+  mixed_precision: true
+  optimizer:
+    name: "SGD"
+    lr: 0.1
+    lr_end: 0.01
+    lr_max: 0.2
+    lr_min_scaled: 1.0
+    weight_decay: 0
+    warmup: 0.01
+  seed: 46
+  workers_per_gpu: 32
