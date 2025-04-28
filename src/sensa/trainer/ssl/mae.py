@@ -1,7 +1,6 @@
 import einops
 import torch
 
-from sensa.base import BaseLightningVision
 from sensa.data.mae import Dataset
 from sensa.layers.mask_utils import mask_tensor, unmask_tensor
 from sensa.loss.registry import build_loss
@@ -9,6 +8,7 @@ from sensa.models.registry import build_model
 from sensa.params.data import DataParams
 from sensa.params.loss import LossParams
 from sensa.params.model import ModelParams
+from sensa.trainer.base import BaseLightningVision
 
 
 class MAE(BaseLightningVision):

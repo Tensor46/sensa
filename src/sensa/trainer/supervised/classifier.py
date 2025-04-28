@@ -1,13 +1,13 @@
 import torch
 import torchmetrics as tm
 
-from sensa.base import BaseLightningVision
 from sensa.data.imagenet import Dataset
 from sensa.loss.registry import build_loss
 from sensa.models.registry import build_model
 from sensa.params.data import DataParams
 from sensa.params.loss import LossParams
 from sensa.params.model import ModelParams
+from sensa.trainer.base import BaseLightningVision
 
 
 class ClassifierWithOutValidation(BaseLightningVision):

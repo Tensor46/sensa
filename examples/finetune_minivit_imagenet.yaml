@@ -34,7 +34,7 @@ backbone:
   last_stride: 4
   use_sincos_pos_token: True
 
-  mode: linear
+  mode: full
   skip_freeze_prefixes:
     - head
   path_to_checkpoint: "./checkpoints/mae_minivit_imagenet_epoch=99.ckpt"
@@ -49,12 +49,12 @@ trainer:
   logger_frequency: 20
   mixed_precision: true
   optimizer:
-    name: "SGD"
-    lr: 0.1
-    lr_end: 0.01
-    lr_max: 0.2
-    lr_min_scaled: 1.0
-    weight_decay: 0
+    name: "ADAMW"
+    lr: 0.0002
+    lr_end: 0.00002
+    lr_max: 0.0002
+    lr_min_scaled: 0.01
+    weight_decay: 0.1
     warmup: 0.01
   seed: 46
-  workers_per_gpu: 32
+  workers_per_gpu: 16

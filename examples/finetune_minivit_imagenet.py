@@ -28,7 +28,7 @@ if __name__ == "__main__":
         if len(checkpoints):
             cfg["backbone"]["path_to_checkpoint"] = str(checkpoints[-1])
 
-    pt_model = sensa.supervised.Classifier(**cfg)
+    pt_model = sensa.trainer.supervised.Classifier(**cfg)
 
     trainer = L.Trainer(
         log_every_n_steps=pt_model.params.trainer.logger_frequency,

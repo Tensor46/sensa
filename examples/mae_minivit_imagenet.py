@@ -19,7 +19,7 @@ def args_parsed():
 if __name__ == "__main__":
     args = args_parsed()
     cfg = sensa.assets.load_yaml(f"{args.config}.yaml")
-    pt_model = sensa.ssl.MAE(**cfg)
+    pt_model = sensa.trainer.ssl.MAE(**cfg)
 
     trainer = L.Trainer(
         log_every_n_steps=pt_model.params.trainer.logger_frequency,
