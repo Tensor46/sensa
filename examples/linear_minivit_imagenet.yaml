@@ -30,7 +30,7 @@ backbone:
   num_classes: 1000
   in_channels: 3
   first_stride: 2
-  last_pool: token
+  last_pool: half
   last_stride: 4
   use_sincos_pos_token: True
 

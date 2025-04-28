@@ -5,8 +5,10 @@ from sensa.base import BaseLightningVision
 from sensa.data.mae import Dataset
 from sensa.layers.mask_utils import mask_tensor, unmask_tensor
 from sensa.models.registry import build_model
+from sensa.loss.registry import build_loss
 from sensa.params.data import DataParams
 from sensa.params.model import ModelParams
+from sensa.params.loss import LossParams
 
 
 class MAE(BaseLightningVision):
@@ -44,11 +46,14 @@ class MAE(BaseLightningVision):
             Configuration for the encoder model (architecture, patch size, etc.).
         mae_decoder : ModelParams
             Configuration for the decoder model (architecture, patch size, etc.).
+        loss : LossParams
+            Configuration for the loss.
         """
 
         data: DataParams
         mae_encoder: ModelParams
         mae_decoder: ModelParams
+        loss: LossParams
 
     __dataset__ = Dataset
     __params__ = Params
@@ -58,7 +63,7 @@ class MAE(BaseLightningVision):
         super().__init__(**kwargs)
         self.encoder = build_model(self.params.mae_encoder)
         self.decoder = build_model(self.params.mae_decoder)
-        self.criteria = torch.nn.MSELoss()
+        self.criteria = build_loss(self.params.loss)
 
     @property
     def name(self) -> str:

@@ -21,7 +21,7 @@ mae_encoder:
   num_classes: null
   in_channels: 3
   first_stride: 2
-  last_pool: token
+  last_pool: half
   last_stride: 4
   use_sincos_pos_token: True
 
@@ -37,6 +37,9 @@ mae_decoder:
   mlp_dim: 2048
   num_layers: 4
   num_heads: 16
+
+loss:
+  name: MSELoss
 
 trainer:
   accumulate_grad_batches: 1
