@@ -18,5 +18,5 @@ class MSELoss(BaseLoss):
         super().__init__()
         self.kwargs = {"size_average": size_average, "reduce": reduce, "reduction": reduction, "weight": weight}
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        return torch.nn.functional.mse_loss(input, target, **self.kwargs)
+    def forward(self, tensor: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.mse_loss(tensor, target, **self.kwargs)
