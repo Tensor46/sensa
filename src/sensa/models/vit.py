@@ -296,11 +296,19 @@ class VIT(BaseModel):
         for i in range(0, len(self.encoder.layers), 2):
             groups += self._param_groups(self.encoder.layers[i : i + 2])
         self._param_groups(self.encoder.ln, groups=groups[-2:])
-        if isinstance(self.encoder.pos_token, torch.nn.Parameter):
+        if isinstance(self.encoder.pos_token, torch.nn.Parameter) and self.encoder.pos_token.requires_grad:
             groups[-1]["params"].append(self.encoder.pos_token)
-        if hasattr(self, "class_token"):
+        if (
+            hasattr(self, "class_token")
+            and isinstance(self.class_token, torch.nn.Parameter)
+            and self.class_token.requires_grad
+        ):
             groups[-1]["params"].append(self.class_token)
-        if hasattr(self, "mask_token"):
+        if (
+            hasattr(self, "mask_token")
+            and isinstance(self.mask_token, torch.nn.Parameter)
+            and self.mask_token.requires_grad
+        ):
             groups[-1]["params"].append(self.mask_token)
         if hasattr(self, "head"):
             groups += self._param_groups(self.head)

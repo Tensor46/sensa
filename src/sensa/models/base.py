@@ -119,7 +119,6 @@ class BaseModel(torch.nn.Module, abc.ABC):
 
     def load_from_mae(self, path: pathlib.Path) -> None:
         """Load and filter encoder weights from a Masked Autoencoder checkpoint."""
-        # load checkpoint
         logging.info(f"{self.__class__.__name__}: load {path}")
         state_dict = torch.load(path, map_location=torch.device("cpu"), weights_only=True)
         state_dict = filter_state_dict(state_dict, "encoder.")
