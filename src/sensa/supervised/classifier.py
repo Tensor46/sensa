@@ -3,8 +3,10 @@ import torchmetrics as tm
 
 from sensa.base import BaseLightningVision
 from sensa.data.imagenet import Dataset
-from sensa.models import build_model
+from sensa.loss.registry import build_loss
+from sensa.models.registry import build_model
 from sensa.params.data import DataParams
+from sensa.params.loss import LossParams
 from sensa.params.model import ModelParams
 
 
@@ -24,6 +26,7 @@ class ClassifierWithOutValidation(BaseLightningVision):
 
         data: DataParams
         backbone: ModelParams
+        loss: LossParams
 
     __dataset__ = Dataset
     __params__ = Params
@@ -33,7 +36,7 @@ class ClassifierWithOutValidation(BaseLightningVision):
         self.backbone = build_model(self.params.backbone)
         if self.params.backbone.mode == "linear":
             self.backbone.freeze_parameters(skip_freeze_prefixes=self.params.backbone.skip_freeze_prefixes)
-        self.criteria = torch.nn.CrossEntropyLoss()
+        self.criteria = build_loss(self.params.loss)
 
         # metrics
         self.accuracy = tm.Accuracy(task="multiclass", num_classes=self.data.num_labels, top_k=1)

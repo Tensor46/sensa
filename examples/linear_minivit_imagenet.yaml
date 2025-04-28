@@ -39,6 +39,9 @@ backbone:
     - head
   path_to_checkpoint: "./checkpoints/mae_minivit_imagenet_epoch=99.ckpt"
 
+loss:
+  name: CrossEntropyLoss
+
 trainer:
   accumulate_grad_batches: 1
   batch_size_per_gpu: 256
