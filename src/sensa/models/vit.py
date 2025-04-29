@@ -26,7 +26,7 @@ def build_stem(
     """Constructs a convolutional "stem" for patch embedding, using depthwise and
     pointwise convolutions followed by batch normalization.
 
-    An initial Conv2dNormActivation layer (depthwise + pointwise conv + SiLU + BatchNorm).
+    An initial Conv2dNormActivation layer (Convolution + BatchNorm + SiLU).
     A sequence of inverted residual blocks and downsampling blocks.
 
     Parameters:
@@ -109,9 +109,8 @@ def build_stem(
         ),
     )
     for i, (ic, oc) in enumerate(pairwise(channels)):
-        # for j in range(i + 1):
-        #     stem.add_module(f"ir_{i}x{j}", IRL(IRC(ic, 3, ic, ic), norm_layer=norm_layer))
-        stem.add_module(f"ir_{i}", IRL(IRC(ic, 3, ic, ic), norm_layer=norm_layer))
+        for j in range(i + 1):
+            stem.add_module(f"ir_{i}x{j}", IRL(IRC(ic, 3, ic, ic), norm_layer=norm_layer))
         stride = 2 if oc != out_channels else last_stride
         stem.add_module(f"down_{i}", DownBlock(ic, oc, stride))
 
