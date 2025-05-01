@@ -93,7 +93,8 @@ def build_stem(
     defaults = {"use_se": False, "activation": "HS", "stride": 1, "dilation": 1, "width_mult": 1.0}
     IRC = partial(tv.models.mobilenetv3.InvertedResidualConfig, **defaults)
     IRL = tv.models.mobilenetv3.InvertedResidual
-    channels = [out_channels // (2**i) for i in range(1 + int(math.log2(patch_size / last_stride)))][::-1]
+    channels = [out_channels // (2**i) for i in range(2 + int(math.log2(patch_size / first_stride / last_stride)))]
+    channels = channels[::-1]
 
     # build stem
     stem = torch.nn.Sequential()
