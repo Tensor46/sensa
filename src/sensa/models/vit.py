@@ -10,6 +10,7 @@ import torch
 import torchvision as tv
 
 from sensa.layers import mask_utils
+from sensa.layers.dyt import DyT
 from sensa.layers.encoder import Encoder
 from sensa.layers.last_pool import LastPool
 from sensa.models.base import BaseModel
@@ -154,8 +155,8 @@ class VIT(BaseModel):
                 Defaults to "token".
         last_stride (int, optional):
             Stride for the stem's final downsampling block. Defaults to 4.
-        norm_layer (Callable[..., nn.Module], optional):
-            Normalization layer factory. Defaults to LayerNorm(eps=1e-6).
+        norm_layer (Callable[..., nn.Module] | str, optional):
+            Normalization layer for encoder. Defaults to LayerNorm(eps=1e-6).
         use_sincos_pos_token (bool, optional):
             Whether to use fixed sinusoidal positional embeddings. Defaults to False.
     """
@@ -174,7 +175,7 @@ class VIT(BaseModel):
         first_stride: int = 2,
         last_pool: Literal["avg", "full", "half", "token", None] = "token",
         last_stride: int = 4,
-        norm_layer: Callable[..., torch.nn.Module] | None = None,
+        norm_layer: Callable[..., torch.nn.Module] | str | None = None,
         use_sincos_pos_token: bool = False,
     ):
         super().__init__()
@@ -191,6 +192,14 @@ class VIT(BaseModel):
         self.last_pool = last_pool
         if norm_layer is None:
             norm_layer = partial(torch.nn.LayerNorm, eps=1e-6)
+        if isinstance(norm_layer, str):
+            if norm_layer == "layernorm":
+                norm_layer = partial(torch.nn.LayerNorm, eps=1e-6)
+            elif norm_layer == "dyt":
+                norm_layer = DyT
+            else:
+                logging.error(f"VIT: norm_layer must be layernorm | dyt when string - {norm_layer}.")
+                raise ValueError(f"VIT: norm_layer must be layernorm | dyt when string - {norm_layer}.")
 
         self.stem = build_stem(
             in_channels=in_channels,
