@@ -31,8 +31,8 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
         """Configuration container for BaseVision.
 
         Fields:
-            data (DataParams | None): Specs for the training dataset.
-            data_test (DataParams | None): Specs for the validation/test dataset.
+            data (DataParams | None): Parameters for the training dataset.
+            data_test (DataParams | None): Parameters for the validation/test dataset.
             trainer (TrainerParams): Training loop and optimizer parameters.
         """
 
@@ -151,7 +151,8 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
 
         iwarmup = int(self.params.trainer.optimizer.warmup * self.iterations)
         if self.global_step < iwarmup:  # linear lr
-            return scheduler.fn_linear(min(self.lr * 1e-8, self.lr_end * 1e-2), self.lr, self.global_step, iwarmup)
+            start = min(self.lr * 1e-8, self.lr_end * 1e-2)
+            return scheduler.fn_linear(start, self.lr, self.global_step, iwarmup)
         # cosine lr
         return scheduler.fn_cosine(self.lr, self.lr_end, self.global_step - iwarmup, self.iterations - iwarmup)
 

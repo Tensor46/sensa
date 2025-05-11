@@ -1,3 +1,5 @@
+import torch
+
 from sensa.params.base import BaseParams
 from sensa.params.optim import OptimParams
 
@@ -7,8 +9,8 @@ class TrainerParams(BaseParams):
 
     Fields
     ------
-        accumulate_grad_batches (int, default=1):
-            Number of batches to accumulate gradients before stepping.
+        batch_size (int, default=None):
+            Total batch size (accumulate_grad_batches * batch_size_per_gpu * num_gpus).
         batch_size_per_gpu (int):
             Batch size for each GPU.
         epochs (int):
@@ -25,7 +27,7 @@ class TrainerParams(BaseParams):
             Number of dataloader worker processes per GPU.
     """
 
-    accumulate_grad_batches: int = 1
+    batch_size: int | None = None
     batch_size_per_gpu: int
     epochs: int
     logger_frequency: int = 20
@@ -33,3 +35,14 @@ class TrainerParams(BaseParams):
     optimizer: OptimParams
     seed: int = 46
     workers_per_gpu: int = 4
+
+    @property
+    def accumulate_grad_batches(self) -> int:
+        """Number of batches to accumulate gradients before stepping."""
+        if isinstance(self.batch_size, int) and self.batch_size > self.batch_size_per_gpu:
+            return max(1, self.batch_size // (self.batch_size_per_gpu * self.gpus))
+        return 1
+
+    @property
+    def gpus(self) -> int:
+        return torch.cuda.device_count() if torch.cuda.is_available() and torch.cuda.device_count() > 1 else 1

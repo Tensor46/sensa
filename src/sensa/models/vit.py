@@ -233,13 +233,15 @@ class VIT(BaseModel):
 
         if self.last_pool is not None:
             self.pool = LastPool(pool=self.last_pool, size=self.stem_size)
-        if hasattr(self, "pool") and isinstance(self.num_classes, int) and self.num_classes:
-            if self.last_pool in ("avg", "token"):
-                self.head = torch.nn.Linear(self.hidden_dim, self.num_classes)
-            if self.last_pool == "full":
-                self.head = torch.nn.Linear(self.hidden_dim * self.seq_length, self.num_classes)
-            if self.last_pool == "half":
-                self.head = torch.nn.Linear(self.hidden_dim * self.seq_length // 4, self.num_classes)
+            if isinstance(self.num_classes, int) and self.num_classes:
+                if self.last_pool in ("avg", "token"):
+                    self.head = torch.nn.Linear(self.hidden_dim, self.num_classes)
+                if self.last_pool == "full":
+                    self.head = torch.nn.Linear(self.hidden_dim * self.seq_length, self.num_classes)
+                if self.last_pool == "half":
+                    h, w = self.pool.size_after_pool
+                    self.head = torch.nn.Linear(self.hidden_dim * h * w, self.num_classes)
+
             torch.nn.init.zeros_(self.head.weight)
             torch.nn.init.zeros_(self.head.bias)
         self._initialize()

@@ -42,7 +42,7 @@ loss:
   name: MSELoss
 
 trainer:
-  accumulate_grad_batches: 1
+  batch_size: null
   batch_size_per_gpu: 512
   epochs: 100
   logger_frequency: 20
