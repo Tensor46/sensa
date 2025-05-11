@@ -111,10 +111,12 @@ def build_stem(
         ),
     )
     for i, (ic, oc) in enumerate(pairwise(channels)):
+        stage = torch.nn.Sequential()
         for j in range(i + 1):
-            stem.add_module(f"ir_{i}x{j}", IRL(IRC(ic, 3, ic, ic), norm_layer=norm_layer))
+            stage.add_module(f"ir_{j}", IRL(IRC(ic, 3, ic, ic), norm_layer=norm_layer))
         stride = 2 if oc != out_channels else last_stride
-        stem.add_module(f"down_{i}", DownBlock(ic, oc, stride))
+        stage.add_module("down", DownBlock(ic, oc, stride))
+        stem.add_module(f"stage_{i}", stage)
 
     return stem
 
