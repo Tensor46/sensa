@@ -13,7 +13,7 @@ from sensa.models.base import BaseModel
 from sensa.params.base import BaseParams
 from sensa.params.data import DataParams
 from sensa.params.trainer import TrainerParams
-from sensa.utils import scheduler
+from sensa.trainer import scheduler
 from sensa.utils.param_grouping import base_param_grouping, merge_param_groups
 
 

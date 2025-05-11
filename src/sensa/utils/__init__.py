@@ -1,4 +1,4 @@
-from sensa.utils import load, obscure_state, scheduler
+from sensa.utils import load, obscure_state
 
 
-__all__ = ["load", "obscure_state", "scheduler"]
+__all__ = ["load", "obscure_state"]
