@@ -45,3 +45,46 @@ def test_random_horizontal_flip_all_annotations(sample_inputs):
     # zero-out where v==0
     swapped_keypoints[swapped_keypoints[..., 2] == 0] = 0.0
     assert torch.equal(flipped_target["keypoints"], swapped_keypoints)
+
+
+def test_no_rotate90s(sample_inputs):
+    image, target = sample_inputs
+    rot90s = sensa.data.augment.Rotate90s(p=0.0)
+
+    out_image, out_target = rot90s(image.clone(), {k: v.clone() for k, v in target.items()})
+
+    # image should be unchanged
+    assert torch.equal(out_image, image)
+    # boxes, masks, and keypoints should be unchanged
+    assert torch.equal(out_target["boxes"].data, target["boxes"].data)
+    assert torch.equal(out_target["masks"].data, target["masks"].data)
+    assert torch.equal(out_target["keypoints"], target["keypoints"])
+
+
+def test_rotate_180(sample_inputs):
+    image, target = sample_inputs
+    rot90s = sensa.data.augment.Rotate90s(p=1.0)
+    # Restrict to 180° for deterministic test
+    rot90s.angles = (180,)
+
+    out_image, out_target = rot90s(image.clone(), {k: v.clone() for k, v in target.items()})
+
+    # image must be rotate by 180°
+    assert torch.equal(out_image, torch.rot90(image, 2, dims=(1, 2)))
+
+    # invert around width and height
+    h, w = image.shape[-2:]
+    x0, y0, x1, y1 = target["boxes"].data[0]
+    exp_boxes = torch.Tensor([[w - x1, h - y1, w - x0, h - y0]])
+    assert torch.equal(out_target["boxes"].data, exp_boxes)
+
+    # similar to image -- rotate by 180°
+    assert torch.equal(out_target["masks"].data, torch.rot90(target["masks"].data, 2, dims=(1, 2)))
+
+    # invert each coordinate
+    keypoints = target["keypoints"]
+    exp_keypoints = keypoints.clone()
+    exp_keypoints[..., 0] = w - keypoints[..., 0]
+    exp_keypoints[..., 1] = h - keypoints[..., 1]
+    exp_keypoints[exp_keypoints[..., 2] == 0] = 0.0
+    assert torch.equal(out_target["keypoints"], exp_keypoints)
