@@ -8,9 +8,9 @@ import sensa
 
 
 def args_parsed():
-    parser = argparse.ArgumentParser("MiniImagenet", add_help=False)
+    parser = argparse.ArgumentParser("MiniVITImagenet", add_help=False)
 
-    parser.add_argument("--config", type=str, default="linear_minivit_imagenet")
+    parser.add_argument("--config", type=str, default="finetune_minivit_imagenet")
     parser.add_argument("--path", type=str, default="./checkpoints")
 
     parser.add_argument("-a", "--auto", action="store_true")
