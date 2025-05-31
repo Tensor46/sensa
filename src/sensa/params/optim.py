@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import pydantic
 
@@ -35,9 +35,9 @@ class OptimParams(BaseParams):
     lr: float
     lr_end: float
     lr_max: float | None = None
-    lr_min_scaled: float = 1.0
-    weight_decay: float = 5e-4
-    warmup: float = 0.1
+    lr_min_scaled: Annotated[float, pydantic.Field(ge=0.0, le=1.0)] = 1.0
+    weight_decay: Annotated[float, pydantic.Field(ge=0.0, le=1.0)] = 5e-4
+    warmup: Annotated[float, pydantic.Field(ge=0.0, le=1.0)] = 0.1
 
     @pydantic.model_validator(mode="before")
     @classmethod
