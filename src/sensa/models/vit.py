@@ -244,8 +244,8 @@ class VIT(BaseModel):
                     h, w = self.pool.size_after_pool
                     self.head = torch.nn.Linear(self.hidden_dim * h * w, self.num_classes)
 
-            torch.nn.init.zeros_(self.head.weight)
-            torch.nn.init.zeros_(self.head.bias)
+                torch.nn.init.normal_(self.head.weight, std=0.01)
+                torch.nn.init.zeros_(self.head.bias)
         self._initialize()
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
