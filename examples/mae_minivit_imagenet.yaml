@@ -23,7 +23,7 @@ mae_encoder:
   first_stride: 2
   last_pool: half
   last_stride: 4
-  use_sincos_pos_token: True
+  use_sincos_pos_token: False
 
 mae_decoder:
   name: MAEDecoder
@@ -42,7 +42,7 @@ loss:
   name: MSELoss
 
 trainer:
-  batch_size: null
+  batch_size: 6144
   batch_size_per_gpu: 512
   epochs: 100
   logger_frequency: 20
