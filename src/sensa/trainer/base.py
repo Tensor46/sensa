@@ -194,4 +194,7 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
 
         tensor = tensor.cpu()
         pathlib.Path("./checkpoints").mkdir(exist_ok=True)
-        tv2.functional.to_pil_image(tensor).save(f"./checkpoints/{self.name}.png")
+        if tensor.size(0) in (1, 3):
+            tv2.functional.to_pil_image(tensor).save(f"./checkpoints/{self.name}.png")
+        else:
+            torch.save({"tensor": tensor}, f"./checkpoints/{self.name}.bin")
