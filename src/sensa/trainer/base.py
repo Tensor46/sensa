@@ -186,6 +186,16 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
         if torch.cuda.is_available() and torch.cuda.device_count() > 1:
             self.iterations = self.iterations // torch.cuda.device_count()
 
+    def freeze_params(self, model: torch.nn.Module | None = None) -> None:
+        """Freeze all the parameters."""
+        for p in (self if model is None else model).parameters():
+            p.requires_grad = False
+
+    def unfreeze_params(self, model: torch.nn.Module | None = None) -> None:
+        """Unfreeze all the parameters."""
+        for p in (self if model is None else model).parameters():
+            p.requires_grad = True
+
     def save_as_image(self, tensor: torch.Tensor, cols: int = 1) -> None:
         """Normalize a batch of image tensors and save as a grid image."""
         tensor -= tensor.amin((1, 2, 3), True)
