@@ -172,7 +172,7 @@ class VIT(BaseModel):
         hidden_dim: int,
         mlp_dim: int,
         mask_ratio: float = 0.0,
-        num_classes: int = 1000,
+        num_classes: int | None = 1000,
         in_channels: int = 3,
         first_stride: int = 2,
         last_pool: Literal["avg", "full", "half", "token", None] = "token",
@@ -211,13 +211,14 @@ class VIT(BaseModel):
             last_stride=last_stride,
         )
         self.stem_size = self.image_size[0] // self.patch_size, self.image_size[1] // self.patch_size
-        seq_length = self.stem_size[0] * self.stem_size[1]
+        extra_tokens: int = 0
         if last_pool == "token":
             self.class_token = torch.nn.Parameter(torch.zeros(1, 1, hidden_dim))
-            seq_length += 1
+            extra_tokens += 1
 
         self.encoder = Encoder(
-            seq_length,
+            size=self.stem_size,
+            extra_tokens=extra_tokens,
             num_layers=num_layers,
             num_heads=num_heads,
             hidden_dim=hidden_dim,
@@ -228,7 +229,7 @@ class VIT(BaseModel):
         )
         if use_sincos_pos_token:
             self.encoder.use_sincos_pos_token(extra_tokens=int(last_pool == "token"), size=self.stem_size)
-        self.seq_length = seq_length
+        self.seq_length = self.encoder.seq_length
 
         if self.mask_ratio > 0:
             self.mask_token = torch.nn.Parameter(torch.zeros(hidden_dim))
@@ -307,7 +308,7 @@ class VIT(BaseModel):
         groups = []
         groups += self._param_groups(self.stem)
         for i in range(0, len(self.encoder.layers), 2):
-            groups += self._param_groups(self.encoder.layers[i : i + 2])
+            groups += self._param_groups(self.encoder.layers[slice(i, i + 2)])
         self._param_groups(self.encoder.ln, groups=groups[-2:])
         if isinstance(self.encoder.pos_token, torch.nn.Parameter) and self.encoder.pos_token.requires_grad:
             groups[-1]["params"].append(self.encoder.pos_token)
