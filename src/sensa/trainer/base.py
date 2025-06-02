@@ -196,6 +196,13 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
         for p in (self if model is None else model).parameters():
             p.requires_grad = True
 
+    @staticmethod
+    @torch.no_grad()
+    def ema_update(model_a: torch.nn.Module, model_b: torch.nn.Module, momemtum: float) -> None:
+        """The parameters of `model_b` are updated with exponential moving average technique."""
+        for pa, pb in zip(model_a.parameters(), model_b.parameters(), strict=False):
+            pb.data = pb.data * momemtum + pa.data * (1.0 - momemtum)
+
     def save_as_image(self, tensor: torch.Tensor, cols: int = 1) -> None:
         """Normalize a batch of image tensors and save as a grid image."""
         tensor -= tensor.amin((1, 2, 3), True)
