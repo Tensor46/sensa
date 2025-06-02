@@ -11,6 +11,28 @@ def test_dyt():
     del module
 
 
+def test_encoder():
+    r"""Test sensa.layers.Encoder."""
+    module = sensa.layers.Encoder(
+        size=(8, 6),
+        extra_tokens=0,
+        num_layers=2,
+        num_heads=2,
+        hidden_dim=64,
+        mlp_dim=128,
+        dropout=0.0,
+        attention_dropout=0.0,
+    )
+    assert module(torch.randn(1, 48, 64)).shape == (1, 48, 64)
+
+    # other size are not possible
+    with pytest.raises(AssertionError) as _:
+        module(torch.randn(1, 12, 64))
+    # added additional size
+    module.extend_sizes((4, 3))
+    assert module(torch.randn(1, 12, 64)).shape == (1, 12, 64)
+
+
 def test_last_pool():
     r"""Test sensa.layers.LastPool."""
     module = sensa.layers.LastPool(pool="avg", size=None)
