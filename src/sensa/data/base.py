@@ -25,6 +25,7 @@ class BaseImageFolder(ABC):
     """
 
     __params__: pydantic.BaseModel = DataParams
+    __dryrun__: bool = False
 
     def __init__(self, **kwargs) -> None:
         """Initialize dataset params, build sample database, and set transforms.
@@ -47,12 +48,16 @@ class BaseImageFolder(ABC):
 
     def add_to_dbase(self, path: pathlib.Path) -> None:
         """Add samples to dbase given path."""
-        self.dbase += read_label_per_folder(
-            path=path,
-            start_label_id_at=self.num_labels,
-            stop_label_id_at=self.params.kwargs.get("stop_label_id_at", None),
-            max_samples_per_label=self.params.kwargs.get("max_samples_per_label", None),
-        )
+        if self.__dryrun__:
+            mx = self.params.kwargs.get("stop_label_id_at", None) or 1000
+            self.dbase += [("DRYRUN", self.num_labels + i) for i in range(0, mx)]
+        else:
+            self.dbase += read_label_per_folder(
+                path=path,
+                start_label_id_at=self.num_labels,
+                stop_label_id_at=self.params.kwargs.get("stop_label_id_at", None),
+                max_samples_per_label=self.params.kwargs.get("max_samples_per_label", None),
+            )
         self.num_labels = (self.dbase[-1][-1] + 1) if len(self.dbase) else 0
 
     def __len__(self) -> int:
@@ -68,6 +73,8 @@ class BaseImageFolder(ABC):
 
     def read_image(self, file_name: pathlib.Path) -> ImPIL.Image:
         """Open an image file and convert to the configured color mode."""
+        if file_name == "DRYRUN":
+            return ImPIL.fromarray(torch.randint(0, 255, (128, 128, 3), dtype=torch.uint8).numpy())
         return ImPIL.open(file_name).convert(self.params.mode)
 
     def to_tensor(self, image: ImPIL.Image) -> torch.Tensor:
