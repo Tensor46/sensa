@@ -1,0 +1,59 @@
+data:
+  path: ./
+  size:
+    - 128
+    - 128
+  mode: "RGB"
+  interpolation: 2
+  is_test: false
+
+mae_encoder:
+  name: VIT
+  image_size:
+    - 128
+    - 128
+  patch_size: 8
+  num_layers: 2
+  num_heads: 1
+  hidden_dim: 128
+  mlp_dim: 256
+  mask_ratio: 0.75
+  num_classes: null
+  in_channels: 3
+  first_stride: 2
+  last_pool: half
+  last_stride: 4
+  norm_layer: dyt
+  use_sincos_pos_token: True
+
+mae_decoder:
+  name: MAEDecoder
+  image_size:
+    - 128
+    - 128
+  patch_size: 8
+  channels: 3
+  encoder_dim: 128
+  decoder_dim: 256
+  mlp_dim: 512
+  num_layers: 2
+  num_heads: 4
+
+loss:
+  name: MSELoss
+
+trainer:
+  accumulate_grad_batches: 1
+  batch_size_per_gpu: 4
+  epochs: 1
+  logger_frequency: 20
+  mixed_precision: false
+  optimizer:
+    name: "adamw"
+    lr: 0.0002
+    lr_end: 0.0001
+    lr_max: 0.0002
+    weight_decay: 0.1
+    warmup: 0.02
+  seed: 46
+  workers_per_gpu: 1
