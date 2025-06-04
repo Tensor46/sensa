@@ -79,17 +79,17 @@ class BaseImageFolder(ABC):
         return tv2.functional.to_pil_image(tensor)
 
     @abstractmethod
-    def default_transforms(self) -> tv2.Compose:
+    def default_transforms(self) -> tv2.Compose | list[tv2.Compose]:
         """Define and return training transforms."""
         ...
 
     @abstractmethod
-    def default_transforms_test(self) -> tv2.Compose:
+    def default_transforms_test(self) -> tv2.Compose | list[tv2.Compose]:
         """Define and return test transforms."""
         ...
 
     @property
-    def transforms(self) -> tv2.Compose:
+    def transforms(self) -> tv2.Compose | list[tv2.Compose]:
         """Get the active transform pipeline."""
         return self._transforms
 
@@ -103,4 +103,6 @@ class BaseImageFolder(ABC):
             tuple[torch.Tensor]: Transformed image tensor.
         """
         tensor = self.to_tensor(self.read_image(file_name))
+        if isinstance(self.transforms, list | tuple):
+            return (t(tensor) for t in self.transforms)
         return (self.transforms(tensor),)

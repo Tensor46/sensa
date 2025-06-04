@@ -11,8 +11,6 @@ class Dataset(BaseImageFolder):
         """Build and return the training transform pipeline."""
         return tv2.Compose(
             [
-                tv2.ToImage(),
-                tv2.ToDtype(torch.uint8),
                 torch.jit.script(
                     tv2.RandomResizedCrop(
                         size=self.params.size,
@@ -29,7 +27,6 @@ class Dataset(BaseImageFolder):
         """Build and return the test/eval transform pipeline."""
         return tv2.Compose(
             [
-                tv2.ToImage(),
                 tv2.Resize(
                     size=(self.params.size[0] + 32, self.params.size[1] + 32),
                     interpolation=self.params.interpolation,
