@@ -56,7 +56,8 @@ class MAEDecoder(BaseModel):
         )
         # build the decoder transformer
         self.decoder = Encoder(
-            seq_length=self.stem_size[0] * self.stem_size[1],
+            size=self.stem_size,
+            extra_tokens=0,
             num_layers=num_layers,
             num_heads=num_heads,
             hidden_dim=decoder_dim,
