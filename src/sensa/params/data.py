@@ -28,7 +28,7 @@ class DataParams(BaseParams):
 
     path: tuple[pathlib.Path]
     size: tuple[int, int]
-    mode: Annotated[Literal["RGB", "L"], pydantic.Field(default="RGB")]
+    mode: Annotated[Literal["RGB", "RGBA", "L"], pydantic.Field(default="RGB")]
     interpolation: Annotated[Literal[2, 3], pydantic.Field(default=2)]
     is_test: Annotated[bool, pydantic.Field(default=False)]
 
