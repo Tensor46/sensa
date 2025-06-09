@@ -16,7 +16,7 @@ def fn_cosine(start: float, end: float, iteration: int, iterations: int) -> floa
     """
     if start == end or iteration >= iterations:  # value flats out
         return end
-    return end + 0.5 * (start - end) * (1 + math.cos(math.pi * iteration / (iterations - 1)))
+    return end + 0.5 * (start - end) * (1 + math.cos(math.pi * iteration / max(1, iterations - 1)))
 
 
 def fn_linear(start: float, end: float, iteration: int, iterations: int) -> float:
@@ -34,4 +34,4 @@ def fn_linear(start: float, end: float, iteration: int, iterations: int) -> floa
     """
     if start == end or iteration >= iterations:  # value flats out
         return end
-    return start + (end - start) * iteration / (iterations - 1)
+    return start + (end - start) * iteration / max(1, iterations - 1)
