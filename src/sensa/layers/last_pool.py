@@ -47,7 +47,7 @@ class LastPool(torch.nn.Module):
             if len(size) != 2:
                 logging.error(f"LastPool: size must be tuple[int, int] - {size}.")
                 raise ValueError(f"LastPool: size must be tuple[int, int] - {size}")
-            self.size_after_pool = torch.nn.functional.max_pool2d(torch.randn(1, 1, *self.size), 2, 2)[2:]
+            self.size_after_pool = torch.nn.functional.max_pool2d(torch.randn(1, 1, *self.size), 2, 2).shape[2:]
             self.fn = self.fn_half
         elif self.pool == "token":
             self.fn = self.fn_token
