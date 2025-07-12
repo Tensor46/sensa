@@ -32,7 +32,7 @@ backbone:
   first_stride: 2
   last_pool: half
   last_stride: 4
-  use_sincos_pos_token: True
+  pos_token: "sincos"
 
   mode: full
   skip_freeze_prefixes:

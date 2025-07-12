@@ -11,7 +11,7 @@ import torchvision as tv
 
 from sensa.layers import mask_utils
 from sensa.layers.dyt import DyT
-from sensa.layers.encoder import Encoder
+from sensa.layers.encoder import Encoder2
 from sensa.layers.last_pool import LastPool
 from sensa.models.base import BaseModel
 from sensa.models.registry import register_model
@@ -157,10 +157,12 @@ class VIT(BaseModel):
                 Defaults to "token".
         last_stride (int, optional):
             Stride for the stem's final downsampling block. Defaults to 4.
+        act_layer (Callable[..., torch.nn.Module]):
+            Activation layer for encoder. Defaults to torch.nn.GELU.
         norm_layer (Callable[..., nn.Module] | str, optional):
             Normalization layer for encoder. Defaults to LayerNorm(eps=1e-6).
-        use_sincos_pos_token (bool, optional):
-            Whether to use fixed sinusoidal positional embeddings. Defaults to False.
+        pos_token (Literal["learned", "sincos", "rope"]):
+            Positional token type. Defaults to "learned".
     """
 
     def __init__(
@@ -177,8 +179,9 @@ class VIT(BaseModel):
         first_stride: int = 2,
         last_pool: Literal["avg", "full", "half", "token", None] = "token",
         last_stride: int = 4,
+        act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU,
         norm_layer: Callable[..., torch.nn.Module] | str | None = None,
-        use_sincos_pos_token: bool = False,
+        pos_token: Literal["learned", "sincos", "rope"] = "learned",
     ):
         super().__init__()
         self.image_size = torch.nn.modules.utils._pair(image_size)
@@ -216,7 +219,7 @@ class VIT(BaseModel):
             self.class_token = torch.nn.Parameter(torch.zeros(1, 1, hidden_dim))
             extra_tokens += 1
 
-        self.encoder = Encoder(
+        self.encoder = Encoder2(
             size=self.stem_size,
             extra_tokens=extra_tokens,
             num_layers=num_layers,
@@ -224,11 +227,12 @@ class VIT(BaseModel):
             hidden_dim=hidden_dim,
             mlp_dim=mlp_dim,
             dropout=0.0,
-            attention_dropout=0.0,
+            act_layer=act_layer,
             norm_layer=norm_layer,
+            pos_token=pos_token,
         )
-        if use_sincos_pos_token:
-            self.encoder.use_sincos_pos_token(extra_tokens=int(last_pool == "token"), size=self.stem_size)
+        # if pos_token == "sincos":
+        #     self.encoder.use_sincos_pos_token(extra_tokens=int(last_pool == "token"), size=self.stem_size)
         self.seq_length = self.encoder.seq_length
 
         if self.mask_ratio > 0:
@@ -310,7 +314,11 @@ class VIT(BaseModel):
         for i in range(0, len(self.encoder.layers), 2):
             groups += self._param_groups(self.encoder.layers[slice(i, i + 2)])
         self._param_groups(self.encoder.ln, groups=groups[-2:])
-        if isinstance(self.encoder.pos_token, torch.nn.Parameter) and self.encoder.pos_token.requires_grad:
+        if (
+            hasattr(self.encoder, "pos_token")
+            and isinstance(self.encoder.pos_token, torch.nn.Parameter)
+            and self.encoder.pos_token.requires_grad
+        ):
             groups[-1]["params"].append(self.encoder.pos_token)
         if (
             hasattr(self, "class_token")

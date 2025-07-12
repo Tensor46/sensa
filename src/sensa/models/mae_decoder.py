@@ -1,9 +1,10 @@
 from collections.abc import Callable
 from functools import partial
+from typing import Literal
 
 import torch
 
-from sensa.layers.encoder import Encoder
+from sensa.layers.encoder import Encoder2
 from sensa.models.base import BaseModel
 from sensa.models.registry import register_model
 
@@ -29,8 +30,12 @@ class MAEDecoder(BaseModel):
             Number of transformer layers in the decoder.
         num_heads (int):
             Number of attention heads in each decoder layer.
+        act_layer (Callable[..., torch.nn.Module]):
+            Activation layer for the decoder. Defaults to torch.nn.GELU.
         norm_layer (Callable[..., torch.nn.Module], optional):
             Constructor for the normalization layer. Defaults to `partial(torch.nn.LayerNorm, eps=1e-6)`.
+        pos_token (Literal["learned", "sincos", "rope"]):
+            Positional token type. Defaults to "sincos".
     """
 
     def __init__(
@@ -43,7 +48,9 @@ class MAEDecoder(BaseModel):
         mlp_dim: int,
         num_layers: int,
         num_heads: int,
+        act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU,
         norm_layer: Callable[..., torch.nn.Module] | None = None,
+        pos_token: Literal["learned", "sincos", "rope"] = "sincos",
     ):
         super().__init__()
         self.image_size = image_size
@@ -55,7 +62,7 @@ class MAEDecoder(BaseModel):
             torch.nn.Identity() if encoder_dim == decoder_dim else torch.nn.Linear(encoder_dim, decoder_dim)
         )
         # build the decoder transformer
-        self.decoder = Encoder(
+        self.decoder = Encoder2(
             size=self.stem_size,
             extra_tokens=0,
             num_layers=num_layers,
@@ -63,10 +70,11 @@ class MAEDecoder(BaseModel):
             hidden_dim=decoder_dim,
             mlp_dim=mlp_dim,
             dropout=0.0,
-            attention_dropout=0.0,
+            act_layer=act_layer,
             norm_layer=partial(torch.nn.LayerNorm, eps=1e-6) if norm_layer is None else norm_layer,
+            pos_token=pos_token,
         )
-        self.decoder.use_sincos_pos_token(extra_tokens=0, size=self.stem_size)
+        # self.decoder.use_sincos_pos_token(extra_tokens=0, size=self.stem_size)
         # projection head to map decoder outputs back to patch pixels
         self.predict = torch.nn.Linear(decoder_dim, patch_size * patch_size * channels)
 

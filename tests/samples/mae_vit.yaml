@@ -24,7 +24,7 @@ mae_encoder:
   last_pool: half
   last_stride: 4
   norm_layer: dyt
-  use_sincos_pos_token: True
+  pos_token: "sincos"
 
 mae_decoder:
   name: MAEDecoder

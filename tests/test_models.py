@@ -47,7 +47,7 @@ def test_vit_features():
         num_classes=None,
         in_channels=3,
         last_pool=None,
-        use_sincos_pos_token=True,
+        pos_token="sincos",
     )
     output = model(torch.randn(1, 3, 128, 128))
     assert output.shape[-1] == model.hidden_dim, f"output shape must be {output.shape}"
@@ -67,7 +67,7 @@ def test_vit_features_with_pool():
         num_classes=None,
         in_channels=3,
         last_pool="half",
-        use_sincos_pos_token=True,
+        pos_token="rope",
     )
     output = model(torch.randn(1, 3, 128, 128))
     size = model.hidden_dim * (model.stem_size[0] // 2) * (model.stem_size[1] // 2)
