@@ -4,6 +4,29 @@ import torch
 import sensa
 
 
+def test_attention():
+    """Test sensa.layers.attention.Attention module for shape correctness and forward pass."""
+    batch_size = 2
+    size = h, w = 4, 6
+    embed_dim = 32
+    num_heads = 4
+
+    tensor = torch.randn(batch_size, h * w, embed_dim)
+
+    # instantiate attention module
+    attn = sensa.layers.attention.Attention(size=size, dim=embed_dim, num_heads=num_heads)
+    assert attn(tensor).shape == tensor.shape
+
+    # test with rope embedding
+    attn = sensa.layers.attention.Attention(size=size, dim=embed_dim, num_heads=num_heads, use_rope=True)
+    assert attn(tensor).shape == tensor.shape
+
+    # test with masked tensor
+    keep_idx, *_ = sensa.layers.mask_utils.random_mask_indices(tensor, 0.2)
+    tensor_masked = sensa.layers.mask_utils.mask_tensor(tensor, keep_idx)
+    assert attn(tensor_masked, indices_to_keep=keep_idx).shape == tensor_masked.shape
+
+
 def test_dyt():
     r"""Test sensa.layers.DyT."""
     module = sensa.layers.DyT(16)
@@ -24,6 +47,29 @@ def test_encoder():
         attention_dropout=0.0,
     )
     assert module(torch.randn(1, 48, 64)).shape == (1, 48, 64)
+
+    # other size are not possible
+    with pytest.raises(AssertionError) as _:
+        module(torch.randn(1, 12, 64))
+    # added additional size
+    module.extend_sizes((4, 3))
+    assert module(torch.randn(1, 12, 64)).shape == (1, 12, 64)
+
+
+def test_encoder2():
+    r"""Test sensa.layers.Encoder2."""
+    for pos_token in ("learned", "sincos", "rope"):
+        module = sensa.layers.Encoder2(
+            size=(8, 6),
+            extra_tokens=0,
+            num_layers=2,
+            num_heads=2,
+            hidden_dim=64,
+            mlp_dim=128,
+            dropout=0.0,
+            pos_token=pos_token,
+        )
+        assert module(torch.randn(1, 48, 64)).shape == (1, 48, 64)
 
     # other size are not possible
     with pytest.raises(AssertionError) as _:
@@ -60,6 +106,7 @@ def test_last_pool():
 
 
 def test_random_mask_indices_shapes_and_inverse():
+    r"""Test sensa.layers.mask_utils.random_mask_indices."""
     b, n, c = 4, 8, 6
     x = torch.randn(b, n, c)
     ratio = 0.4
@@ -81,6 +128,7 @@ def test_random_mask_indices_shapes_and_inverse():
 
 
 def test_mask_and_unmask_roundtrip_default_token():
+    r"""Test sensa.layers.mask_utils.mask_tensor and sensa.layers.mask_utils.unmask_tensor."""
     b, n, c = 2, 4, 6
     x = torch.arange(b * n * c, dtype=torch.float32).reshape(b, n, c)
     ratio = 0.3

@@ -68,7 +68,7 @@ class Encoder(tv.models.vision_transformer.Encoder):
 
     def use_sincos_pos_token(self, extra_tokens: int, size: tuple[int, int]) -> None:
         del self.pos_token
-        self.register_buffer("pos_token", sincos_2d_positional_encoding(self.hidden_dim, extra_tokens, size))
+        self.register_buffer("pos_token", sincos_2d_positional_encoding(self.hidden_dim, extra_tokens, size)[None])
         self.is_sincos_pos_token = True
 
 
@@ -119,7 +119,7 @@ class Encoder2(torch.nn.Module):
         if pos_token == "learned":
             self.pos_token = torch.nn.Parameter(torch.empty(1, self.seq_length, self.hidden_dim).normal_(std=0.02))
         else:
-            self.register_buffer("pos_token", sincos_2d_positional_encoding(self.hidden_dim, extra_tokens, size))
+            self.register_buffer("pos_token", sincos_2d_positional_encoding(self.hidden_dim, extra_tokens, size)[None])
 
         self.layers = torch.nn.ModuleList(
             [
@@ -163,7 +163,7 @@ class Encoder2(torch.nn.Module):
             height, width = size = self.other_sizes[index]
             o = (tensor + self.resize_pos_token(size)) if hasattr(self, "pos_token") else tensor
         else:
-            torch._assert(False, f"Invalid tensor.shape - {tensor.shape} | {self.other_sizes}.")
+            torch._assert(False, f"Invalid tensor.shape - {tensor.shape} | {[self.size, *self.other_sizes]}.")
 
         if indices_to_keep is not None:
             o = mask_utils.mask_tensor(o, indices_to_keep=indices_to_keep)
