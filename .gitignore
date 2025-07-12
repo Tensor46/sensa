@@ -176,3 +176,4 @@ cython_debug/
 internal_examples/
 to_delete/
 *.ckpt
+test*.ipynb

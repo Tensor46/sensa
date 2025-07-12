@@ -120,6 +120,7 @@ ignore = [
   "S105", "S106", "S107",  # Ignore checks for possible passwords
   "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",  # Ignore complexity
   "NPY002",
+  "B008",
 ]
 unfixable = []
 
