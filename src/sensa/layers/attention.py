@@ -214,14 +214,10 @@ class EncoderLayer(BaseLayer):
         width: int | None = None,
     ):
         o = self.attn(self.attn_norm(tensor), indices_to_keep, height, width)
-        if self.training and self.p > 0:  # drop path
-            o = RegularizeDP.apply(o, self.p)
-        out = tensor + o
+        out = tensor + (RegularizeDP.apply(o, self.p) if self.training and self.p > 0 else o)  # drop path
 
         o = self.mlp(self.mlp_norm(out))
-        if self.training and self.p > 0:  # drop path
-            o = RegularizeDP.apply(o, self.p)
-        out = out + o
+        out = out + (RegularizeDP.apply(o, self.p) if self.training and self.p > 0 else o)  # drop path
         return out
 
 
@@ -234,7 +230,7 @@ class CrossAttention(torch.nn.Module):
         num_heads (int): Number of attention heads.
     """
 
-    def __init__(self, dim: int, dim_kv: int | None, num_heads: int = 1):
+    def __init__(self, dim: int, dim_kv: int | None, num_heads: int):
         super().__init__()
         self.dim = dim
         self.dim_kv = dim_kv or dim
@@ -257,3 +253,42 @@ class CrossAttention(torch.nn.Module):
             attn = attn.softmax(dim=-1)
             o = attn @ v
         return self.o(o.transpose(1, 2).reshape(b, n, c))
+
+
+class CrossAttenttionLayer(torch.nn.Module):
+    """Cross-attention layer.
+
+    Args:
+        dim (int): Dimension of the query and key.
+        dim_kv (int | None): Dimension of the key and value. If None, it is set to the same as the query.
+        num_heads (int): Number of attention heads.
+        dropout (float): Drop path rate (default: 0.0).
+        act_layer (Callable[..., torch.nn.Module]): Activation layer (default: nn.GELU)
+        norm_layer (Callable[..., torch.nn.Module]): Normalization layer (default: nn.LayerNorm).
+    """
+
+    def __init__(
+        self,
+        dim: int,
+        dim_kv: int | None,
+        num_heads: int,
+        dropout: float = 0.0,
+        act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU,
+        norm_layer: Callable[..., torch.nn.Module] = partial(torch.nn.LayerNorm, eps=1e-6),
+    ):
+        super().__init__()
+        self.attn_norm = norm_layer(dim)
+        self.cross_attention = CrossAttention(dim, dim_kv, num_heads)
+        self.p = dropout
+
+        self.mlp_norm = norm_layer(dim)
+        self.mlp = MLP(dim, dim, None, act_layer=act_layer)
+
+    def forward(self, q: torch.Tensor, kv: torch.Tensor) -> torch.Tensor:
+        # cross attention
+        o = self.cross_attention(self.attn_norm(q), kv)
+        q = q + (RegularizeDP.apply(o, self.p) if self.training and self.p > 0 else o)  # drop path
+        # mlp
+        o = self.mlp(self.mlp_norm(q))
+        q = q + (RegularizeDP.apply(o, self.p) if self.training and self.p > 0 else o)  # drop path
+        return q

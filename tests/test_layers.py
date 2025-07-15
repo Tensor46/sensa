@@ -42,6 +42,26 @@ def test_cross_attention():
     assert cross_attention(q, kv).shape == q.shape
 
 
+def test_cross_attention_layer():
+    """Test sensa.layers.attention.CrossAttenttionLayer module for shape correctness and forward pass."""
+    batch_size = 2
+    h, w = 4, 6
+    h_kv, w_kv = 5, 7
+    embed_dim = 32
+    num_heads = 4
+
+    q = torch.randn(batch_size, h * w, embed_dim)
+    kv = torch.randn(batch_size, h_kv * w_kv, embed_dim)
+
+    cross_attention_layer = sensa.layers.attention.CrossAttenttionLayer(
+        dim=embed_dim,
+        dim_kv=embed_dim,
+        num_heads=num_heads,
+        dropout=0.0,
+    )
+    assert cross_attention_layer(q, kv).shape == q.shape
+
+
 def test_dyt():
     r"""Test sensa.layers.DyT."""
     module = sensa.layers.DyT(16)
