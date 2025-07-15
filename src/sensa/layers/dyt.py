@@ -1,7 +1,9 @@
 import torch
 
+from sensa.layers.base import BaseLayer
 
-class DyT(torch.nn.Module):
+
+class DyT(BaseLayer):
     """Replacement for LayerNorm using DyT(x) = gamma * tanh(alpha * x) + beta.
 
     Reference:
@@ -18,14 +20,14 @@ class DyT(torch.nn.Module):
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
         """Apply the DyT normalization element-wise."""
-        torch._assert(tensor.size(-1) == self.dim, f"Last dimension must be {self.dim}, got {tensor.shape[-1]}")
+        self.assert_once(tensor.size(-1) == self.dim, f"Last dimension must be {self.dim}, got {tensor.shape[-1]}")
         return (tensor.mul_(self.alpha).tanh_() * self.gamma).add_(self.beta)
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}"
 
 
-class DyT2D(torch.nn.Module):
+class DyT2D(BaseLayer):
     """2D version of DyT for feature maps: DyT(x) = gamma * tanh(alpha * x) + beta applied per channel.
 
     Reference:
@@ -41,8 +43,8 @@ class DyT2D(torch.nn.Module):
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
         """Apply the DyT normalization to a 4D tensor (BxCxHxW)."""
-        torch._assert(tensor.size(1) == self.dim, f"Channels must be {self.dim}, got {tensor.shape[1]}")
-        torch._assert(tensor.dim() == 4, f"Expected BxCxHxW, got {tuple(tensor.shape)}")
+        self.assert_once(tensor.size(1) == self.dim, f"Channels must be {self.dim}, got {tensor.shape[1]}")
+        self.assert_once(tensor.dim() == 4, f"Expected BxCxHxW, got {tuple(tensor.shape)}")
         return (tensor.mul_(self.alpha).tanh_() * self.gamma[:, None, None]).add_(self.beta[:, None, None])
 
     def extra_repr(self) -> str:

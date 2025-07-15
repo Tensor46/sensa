@@ -5,6 +5,7 @@ from functools import lru_cache, partial
 import torch
 
 from sensa.layers import mask_utils
+from sensa.layers.base import BaseLayer
 from sensa.layers.regularizer import RegularizeDP
 
 
@@ -71,7 +72,7 @@ def add_rope_embeddings(
     return tensor * theta.cos() + tensor_rotated * theta.sin()
 
 
-class Attention(torch.nn.Module):
+class Attention(BaseLayer):
     """Attention module with optional RoPE embeddings.
 
     Args:
@@ -157,8 +158,8 @@ class MLP(torch.nn.Sequential):
         out_features: int | None = None,
         act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU,
     ):
-        out_features: int = out_features or in_features
-        hidden_features: int = hidden_features or in_features
+        out_features = out_features or in_features
+        hidden_features = hidden_features or in_features
         super().__init__(
             OrderedDict(
                 [
@@ -170,7 +171,7 @@ class MLP(torch.nn.Sequential):
         )
 
 
-class EncoderLayer(torch.nn.Module):
+class EncoderLayer(BaseLayer):
     """Encoder layer with Attention + MLP.
 
     Args:
