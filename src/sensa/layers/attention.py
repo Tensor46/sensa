@@ -223,3 +223,37 @@ class EncoderLayer(BaseLayer):
             o = RegularizeDP.apply(o, self.p)
         out = out + o
         return out
+
+
+class CrossAttention(torch.nn.Module):
+    """Cross-attention module.
+
+    Args:
+        dim (int): Dimension of the query and key.
+        dim_kv (int | None): Dimension of the key and value. If None, it is set to the same as the query.
+        num_heads (int): Number of attention heads.
+    """
+
+    def __init__(self, dim: int, dim_kv: int | None, num_heads: int = 1):
+        super().__init__()
+        self.dim = dim
+        self.dim_kv = dim_kv or dim
+        self.num_heads = num_heads
+        self.scale = (self.dim // self.num_heads) ** -0.5
+        self.q = torch.nn.Linear(self.dim, self.dim, bias=False)
+        self.k = torch.nn.Linear(self.dim_kv, self.dim, bias=False)
+        self.v = torch.nn.Linear(self.dim_kv, self.dim, bias=False)
+        self.o = torch.nn.Linear(self.dim, self.dim, bias=False)
+
+    def forward(self, q: torch.Tensor, kv: torch.Tensor) -> torch.Tensor:
+        b, n, c = q.shape
+        q = self.q(q).reshape(b, n, self.num_heads, -1).transpose(1, 2)
+        k = self.k(kv).reshape(b, kv.size(1), self.num_heads, -1).transpose(1, 2)
+        v = self.v(kv).reshape(b, kv.size(1), self.num_heads, -1).transpose(1, 2)
+        if hasattr(torch.nn.functional, "scaled_dot_product_attention"):
+            o = torch.nn.functional.scaled_dot_product_attention(q, k, v, dropout_p=0.0)
+        else:
+            attn = (q @ k.transpose(-2, -1)) * self.scale
+            attn = attn.softmax(dim=-1)
+            o = attn @ v
+        return self.o(o.transpose(1, 2).reshape(b, n, c))
