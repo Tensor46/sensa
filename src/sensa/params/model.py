@@ -35,7 +35,7 @@ class ModelParams(BaseParams):
 
     @pydantic.field_validator("path_to_checkpoint", mode="before")
     @classmethod
-    def validate_path(cls, data: Any) -> tuple[pathlib.Path]:
+    def validate_path(cls, data: Any) -> pathlib.Path:
         """Validate the `path_to_checkpoint` field."""
         if isinstance(data, str):
             data = pathlib.Path(data)
