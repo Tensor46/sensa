@@ -23,15 +23,15 @@ class DINO(BaseLightningVision):
     steps_to_log_images : int
         Number of optimizer steps between saving image reconstructions.
     encoder : torch.nn.Module
-        The Vision Transformer encoder built from `params.mae_encoder`.
-    decoder : torch.nn.Module
-        The Vision Transformer decoder built from `params.mae_decoder`.
+        The Vision Transformer encoder built from `params.encoder`.
+    head : torch.nn.Module
+        The DINO head built from `params.head`.
     criteria : torch.nn.Module
-        Reconstruction loss function (MSE).
+        DINO loss function.
     """
 
     class Params(BaseLightningVision.Params):
-        """Hyperparameters for MAE.
+        """Hyperparameters for DINO.
 
         Parameters
         ----------
@@ -39,6 +39,8 @@ class DINO(BaseLightningVision):
             Configuration for data loading (paths, transforms, etc.).
         encoder : ModelParams
             Configuration for the encoder model (architecture, patch size, etc.).
+        head : ModelParams
+            Configuration for the head model (architecture, etc.).
         loss : LossParams
             Configuration for the loss.
         """
