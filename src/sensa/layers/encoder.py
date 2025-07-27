@@ -131,6 +131,7 @@ class Encoder2(torch.nn.Module):
                     dropout,
                     act_layer,
                     norm_layer,
+                    extra_tokens=extra_tokens,
                     use_rope=pos_token == "rope",
                     frequency=frequency,
                 )
@@ -147,9 +148,6 @@ class Encoder2(torch.nn.Module):
         if not (len(size) == 2 and all(isinstance(val, int) for val in size)):
             logging.error(f"Encoder: extend_sizes size must be tuple[int, int] - {size}.")
             raise TypeError(f"Encoder: extend_sizes size must be tuple[int, int] - {size}.")
-        if (self.size[0] * self.size[1]) % (size[0] * size[1]) != 0:
-            logging.error(f"Encoder: extend_sizes requires size that are multiple of size - {size}.")
-            raise ValueError(f"Encoder: extend_sizes requires size that are multiple of size - {size}.")
         self.other_sizes.append(size)
 
     def forward(self, tensor: torch.Tensor, indices_to_keep: torch.Tensor | None = None) -> torch.Tensor:

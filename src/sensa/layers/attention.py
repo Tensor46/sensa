@@ -88,6 +88,7 @@ class Attention(BaseLayer):
         size: tuple[int, int],
         dim: int,
         num_heads: int,
+        extra_tokens: int = 0,
         use_rope: bool = False,
         frequency: float = 10000.0,
     ):
@@ -96,6 +97,7 @@ class Attention(BaseLayer):
         self.dim = dim
         self.num_heads = num_heads
         self.head_dim = head_dim = dim // num_heads
+        self.extra_tokens = extra_tokens
         self.use_rope = use_rope
         self.frequency = frequency
         self.scale = head_dim**-0.5
@@ -118,13 +120,13 @@ class Attention(BaseLayer):
         b, n, c = tensor.size()
         q, k, v = self.qkv(tensor).reshape(b, n, self.num_heads, -1).permute(0, 2, 1, 3).chunk(3, dim=-1)
         if self.use_rope:
-            if (extra_tokens := n - height * width) > 0:  # extra tokens
+            if self.extra_tokens > 0:  # extra tokens
                 if indices_to_keep is not None:
-                    indices_to_keep = indices_to_keep[..., extra_tokens:] - extra_tokens
+                    indices_to_keep = indices_to_keep[..., self.extra_tokens :] - self.extra_tokens
 
-                q1, q2 = q[..., :extra_tokens, :], q[..., extra_tokens:, :]
+                q1, q2 = q[..., : self.extra_tokens, :], q[..., self.extra_tokens :, :]
                 q = torch.cat([q1, add_rope_embeddings(q2, indices_to_keep, height, width, self.frequency)], dim=-2)
-                k1, k2 = k[..., :extra_tokens, :], k[..., extra_tokens:, :]
+                k1, k2 = k[..., : self.extra_tokens, :], k[..., self.extra_tokens :, :]
                 k = torch.cat([k1, add_rope_embeddings(k2, indices_to_keep, height, width, self.frequency)], dim=-2)
             else:
                 q = add_rope_embeddings(q, indices_to_keep, height, width, self.frequency)
@@ -195,6 +197,7 @@ class EncoderLayer(BaseLayer):
         dropout: float,
         act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU,
         norm_layer: Callable[..., torch.nn.Module] = partial(torch.nn.LayerNorm, eps=1e-6),
+        extra_tokens: int = 0,
         use_rope: bool = False,
         frequency: float = 10000.0,
         **kwargs,
@@ -202,7 +205,7 @@ class EncoderLayer(BaseLayer):
         super().__init__()
         self.p = dropout
         self.attn_norm = norm_layer(hidden_dim)
-        self.attn = Attention(size, hidden_dim, num_heads, use_rope, frequency)
+        self.attn = Attention(size, hidden_dim, num_heads, extra_tokens, use_rope, frequency)
         self.mlp_norm = norm_layer(hidden_dim)
         self.mlp = MLP(hidden_dim, mlp_dim, None, act_layer)
 
