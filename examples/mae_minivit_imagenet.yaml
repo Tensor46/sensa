@@ -23,7 +23,7 @@ mae_encoder:
   first_stride: 2
   last_pool: half
   last_stride: 4
-  pos_token: "sincos"
+  pos_token: "rope"
 
 mae_decoder:
   name: MAEDecoder
@@ -37,7 +37,7 @@ mae_decoder:
   mlp_dim: 2048
   num_layers: 4
   num_heads: 16
-  pos_token: "sincos"
+  pos_token: "rope"
 
 loss:
   name: MSELoss

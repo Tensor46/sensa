@@ -130,8 +130,6 @@ def test_encoder2_with_dyt_norm():
     assert module(torch.randn(1, 48, 64)).shape == (1, 48, 64)
 
     # other size are not possible
-    import pytest
-
     with pytest.raises(AssertionError) as _:
         module(torch.randn(1, 12, 64))
     # added additional size
