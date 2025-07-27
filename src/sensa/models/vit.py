@@ -177,8 +177,8 @@ class VIT(BaseModel):
         num_classes: int | None = 1000,
         in_channels: int = 3,
         first_stride: int = 2,
-        last_pool: Literal["avg", "full", "half", "token", None] = "token",
         last_stride: int = 4,
+        last_pool: Literal["avg", "full", "half", "token", None] = "token",
         act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU,
         norm_layer: Callable[..., torch.nn.Module] | str | None = None,
         pos_token: Literal["learned", "sincos", "rope"] = "learned",
@@ -253,6 +253,18 @@ class VIT(BaseModel):
                 torch.nn.init.zeros_(self.head.bias)
         self._initialize()
 
+    def extend_sizes(self, size: tuple[int, int]) -> None:
+        if not isinstance(size, list | tuple):
+            logging.error(f"VIT: extend_sizes size must be tuple[int, int] - {size}.")
+            raise TypeError(f"VIT: extend_sizes size must be tuple[int, int] - {size}.")
+        if not (len(size) == 2 and all(isinstance(val, int) for val in size)):
+            logging.error(f"VIT: extend_sizes size must be tuple[int, int] - {size}.")
+            raise TypeError(f"VIT: extend_sizes size must be tuple[int, int] - {size}.")
+        if size[0] % self.patch_size != 0 or size[1] % self.patch_size != 0:
+            logging.error(f"VIT: extend_sizes requires size that are multiple of patch_size - {size}.")
+            raise ValueError(f"VIT: extend_sizes requires size that are multiple of patch_size - {size}.")
+        self.encoder.extend_sizes((size[0] // self.patch_size, size[1] // self.patch_size))
+
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
         """Runs `forward_features`, applies pooling and classification head."""
         o = self.forward_features(tensor)["features"]
@@ -298,8 +310,8 @@ class VIT(BaseModel):
         """Validates input dimensions. Applies stem and reshapes output to (batch, seq_length, hidden_dim)."""
         n, _, h, w = x.shape
         p = self.patch_size
-        torch._assert(h == self.image_size[0], f"Wrong image height! Expected {self.image_size} but got {h}!")
-        torch._assert(w == self.image_size[1], f"Wrong image width! Expected {self.image_size} but got {w}!")
+        # torch._assert(h == self.image_size[0], f"Wrong image height! Expected {self.image_size} but got {h}!")
+        # torch._assert(w == self.image_size[1], f"Wrong image width! Expected {self.image_size} but got {w}!")
         x = self.stem(x)
         x = x.reshape(n, self.hidden_dim, (h // p) * (w // p)).permute(0, 2, 1)
         return x
