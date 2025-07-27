@@ -203,10 +203,11 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
         for pa, pb in zip(model_a.parameters(), model_b.parameters(), strict=False):
             pb.data = pb.data * momemtum + pa.data * (1.0 - momemtum)
 
-    def save_as_image(self, tensor: torch.Tensor, cols: int = 1) -> None:
+    def save_as_image(self, tensor: torch.Tensor, cols: int = 1, normalize: bool = True) -> None:
         """Normalize a batch of image tensors and save as a grid image."""
-        tensor -= tensor.amin((1, 2, 3), True)
-        tensor /= tensor.amax((1, 2, 3), True)
+        if normalize:
+            tensor -= tensor.amin((1, 2, 3), True)
+            tensor /= tensor.amax((1, 2, 3), True)
         tensor = einops.rearrange(tensor, "(row col) c h w -> c (row h) (col w)", col=cols)
 
         tensor = tensor.cpu()
