@@ -13,6 +13,7 @@ from sensa.layers import mask_utils
 from sensa.layers.dyt import DyT
 from sensa.layers.encoder import Encoder2
 from sensa.layers.last_pool import LastPool
+from sensa.layers.rmsnorm import RMSNorm
 from sensa.models.base import BaseModel
 from sensa.models.registry import register_model
 
@@ -202,9 +203,11 @@ class VIT(BaseModel):
                 norm_layer = partial(torch.nn.LayerNorm, eps=1e-6)
             elif norm_layer == "dyt":
                 norm_layer = DyT
+            elif norm_layer == "rmsnorm":
+                norm_layer = RMSNorm
             else:
-                logging.error(f"VIT: norm_layer must be layernorm | dyt when string - {norm_layer}.")
-                raise ValueError(f"VIT: norm_layer must be layernorm | dyt when string - {norm_layer}.")
+                logging.error(f"VIT: norm_layer must be layernorm | dyt | rmsnorm when string - {norm_layer}.")
+                raise ValueError(f"VIT: norm_layer must be layernorm | dyt | rmsnorm when string - {norm_layer}.")
 
         self.stem = build_stem(
             in_channels=in_channels,
