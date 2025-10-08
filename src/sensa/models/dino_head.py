@@ -53,10 +53,12 @@ class DinoHead(BaseModel):
         # epoch threshold for cancelling gradients on the last layer
         self.epoch_to_cancel_last_layer_grads = epoch_to_cancel_last_layer_grads
         # final weight-normalized linear layer without bias
-        self.last_layer = torch.nn.utils.weight_norm(torch.nn.Linear(bottleneck_dim, output_dim, bias=False))
-        self.last_layer.weight_g.data.fill_(1)
+        self.last_layer = torch.nn.utils.parametrizations.weight_norm(
+            torch.nn.Linear(bottleneck_dim, output_dim, bias=False)
+        )
+        self.last_layer.parametrizations.weight.original0.data.fill_(1)
         if last_layer_norm:
-            self.last_layer.weight_g.requires_grad = False
+            self.last_layer.parametrizations.weight.original0.requires_grad = False
 
     def cancel_last_layer_gradients(self, epoch: int) -> None:
         """Zero out gradients for the last layer if current epoch is below threshold."""
