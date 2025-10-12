@@ -6,7 +6,7 @@ from sensa.loss.registry import register_loss
 
 @register_loss("CrossEntropyLoss")
 class CrossEntropyLoss(BaseLoss):
-    """See `torch.nn.functional.mse_loss`."""
+    """See `torch.nn.functional.cross_entropy`."""
 
     def __init__(
         self,
