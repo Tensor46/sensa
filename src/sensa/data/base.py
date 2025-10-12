@@ -34,7 +34,7 @@ class BaseImageFolder(ABC):
             kwargs: Either a `__params__` instance or keyword args for DataParams.
         """
         self.dbase: list[tuple[pathlib.Path, int]] = []
-        self.num_labels: int = 0
+        self.num_classes: int = 0
 
         # allow passing an existing DataParams instance
         if len(kwargs) == 1 and "params" in kwargs and isinstance(kwargs["params"], self.__params__):
@@ -50,15 +50,15 @@ class BaseImageFolder(ABC):
         """Add samples to dbase given path."""
         if self.__dryrun__:
             mx = self.params.kwargs.get("stop_label_id_at", None) or 1000
-            self.dbase += [("DRYRUN", self.num_labels + i) for i in range(0, mx)]
+            self.dbase += [("DRYRUN", self.num_classes + i) for i in range(0, mx)]
         else:
             self.dbase += read_label_per_folder(
                 path=path,
-                start_label_id_at=self.num_labels,
+                start_label_id_at=self.num_classes,
                 stop_label_id_at=self.params.kwargs.get("stop_label_id_at", None),
                 max_samples_per_label=self.params.kwargs.get("max_samples_per_label", None),
             )
-        self.num_labels = (self.dbase[-1][-1] + 1) if len(self.dbase) else 0
+        self.num_classes = (self.dbase[-1][-1] + 1) if len(self.dbase) else 0
 
     def __len__(self) -> int:
         return len(self.dbase)
