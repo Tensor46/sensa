@@ -1,4 +1,4 @@
-from sensa.trainer.supervised.classifier import Classifier
+from sensa.trainer.supervised.classifier import Classifier, ClassifierWithOutValidation
 
 
-__all__ = ["Classifier"]
+__all__ = ["Classifier", "ClassifierWithOutValidation"]

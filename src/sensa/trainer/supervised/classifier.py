@@ -62,7 +62,22 @@ class ClassifierWithOutValidation(BaseLightningVision):
         # unpack batch
         images, target = batch
         predictions = self(images)
-        loss = self.criteria(predictions, target)
+        output = self.criteria(predictions, target)
+        if isinstance(output, dict):
+            loss = output["loss"]
+            predictions = output.get("predictions", predictions)
+            if predictions.shape[1] < self.data.num_labels:
+                with torch.no_grad():
+                    b = predictions.shape[0]
+                    n = self.data.num_labels - predictions.shape[1]
+                    zeros = torch.zeros(b, n, device=predictions.device, dtype=predictions.dtype)
+                    predictions = torch.cat([predictions, zeros], dim=1)
+
+            target = output.get("target", target)
+        elif isinstance(output, torch.Tensor):
+            loss = output
+        else:
+            raise ValueError(f"Invalid sensa.loss.* output type: {type(output)}")
 
         # logging
         self.log("loss", loss, prog_bar=True, sync_dist=True)

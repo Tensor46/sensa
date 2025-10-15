@@ -18,7 +18,7 @@ mae_encoder:
   hidden_dim: 128
   mlp_dim: 256
   mask_ratio: 0.75
-  num_classes: null
+  num_labels: null
   in_channels: 3
   first_stride: 2
   last_pool: half
