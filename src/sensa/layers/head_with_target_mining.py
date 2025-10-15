@@ -13,7 +13,7 @@ def mine_targets_by_distance(
     target: torch.Tensor,
     keep_ratio: float = 0.5,
     batch_size: int = 50_000,
-    distance_type: Literal["cosine", "euclidean"] = "cosine",
+    distance_mining: Literal["cosine", "euclidean"] = "cosine",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Select a subset of label indices (“subsample”) based on similarity or distance between
     feature vectors and weight vectors, using either cosine similarity or Euclidean distance.
@@ -22,9 +22,9 @@ def mine_targets_by_distance(
         tensor: (B, D) batch of feature vectors.
         weight: (C, D) class/label weight matrix; one row per label.
         target: (B,) ground-truth label indices in [0, C).
-        keep_ratio: fraction of classes to keep (0 <= r <= 1) (a minimum of 1 label is kept).
-        batch_size: chunk size when scanning classes to limit memory.
-        distance_type: "cosine" or "euclidean".
+        keep_ratio: fraction of labels to keep (0 <= r <= 1) (a minimum of 1 label is kept).
+        batch_size: chunk size when scanning labels to limit memory.
+        distance_mining: "cosine" or "euclidean".
             - "cosine" uses max cosine similarity (higher = closer)
             - "euclidean" uses min Euclidean distance (lower = closer)
 
@@ -52,8 +52,8 @@ def mine_targets_by_distance(
             "mine_targets_by_distance: tensor and target must have "
             f"the same number of samples, got {tensor.shape[0]} and {target.shape[0]}"
         )
-    if distance_type not in {"cosine", "euclidean"}:
-        raise ValueError(f"mine_targets_by_distance: Invalid distance_type: {distance_type}")
+    if distance_mining not in {"cosine", "euclidean"}:
+        raise ValueError(f"mine_targets_by_distance: Invalid distance_mining: {distance_mining}")
 
     C: int = weight.shape[0]
     device: torch.device = tensor.device
@@ -64,7 +64,7 @@ def mine_targets_by_distance(
         j = min(C, i + batch_size)
         weight_chunk = weight[i:j]  # (chunk, D)
 
-        if distance_type == "cosine":
+        if distance_mining == "cosine":
             # Cosine similarity: higher is better
             #   Tensor and weight normalization inside the for loop is redundant
             #   but takes less memory when compared to the outer normalization.
@@ -82,7 +82,7 @@ def mine_targets_by_distance(
 
         scores[i:j] = chunk_score.to(scores.dtype)
 
-    # Ensure ground-truth classes are always kept
+    # Ensure ground-truth labels are always kept
     gt_unique = target.unique()
     scores.scatter_(0, gt_unique, 2.0)
 
@@ -91,7 +91,7 @@ def mine_targets_by_distance(
         if torch.distributed.is_initialized() and torch.distributed.get_world_size() > 1:
             torch.distributed.all_reduce(scores, op=torch.distributed.ReduceOp.MAX)
 
-    # Determine how many classes to keep
+    # Determine how many labels to keep
     K = max(1, int(scores.numel() * keep_ratio))
     _, topk_idx = torch.topk(scores, k=K, largest=True, sorted=False)
     subsample = torch.sort(topk_idx).values  # (K,)
@@ -106,44 +106,44 @@ class HeadWithTargetMining(torch.nn.Module):
 
     Args:
         dim: dimension of the input features.
-        num_classes: number of classes.
-        keep_ratio: fraction of classes to keep (0 <= r <= 1) (a minimum of 1 label is kept).
-        batch_size: chunk size when scanning classes to limit memory.
-        distance_type: "cosine" or "euclidean".
+        num_labels: number of labels.
+        keep_ratio: fraction of labels to keep (0 <= r <= 1) (a minimum of 1 label is kept).
+        batch_size: chunk size when scanning labels to limit memory.
+        distance_mining: "cosine" or "euclidean".
             - "cosine" uses max cosine similarity (higher = closer)
             - "euclidean" uses min Euclidean distance (lower = closer)
         normalize: whether to normalize the input features and weight vectors.
 
     Returns:
-        output: (B, num_classes) output tensor.
+        output: (B, num_labels) output tensor.
         target_new: (B,) targets remapped into the subsampled label index space.
     """
 
     def __init__(
         self,
         dim: int,
-        num_classes: int,
+        num_labels: int,
         keep_ratio: float = 0.5,
         batch_size: int = 50_000,
-        distance_type: Literal["cosine", "euclidean"] = "cosine",
-        normalize: bool = True,
+        distance_mining: Literal["cosine", "euclidean"] = "cosine",
+        distance_prediction: Literal["dot", "cosine"] = "dot",
     ):
         super().__init__()
         self.dim = dim
-        self.num_classes = num_classes
-        self.weight = torch.nn.Parameter(torch.randn(num_classes, dim))
+        self.num_labels = num_labels
+        self.weight = torch.nn.Parameter(torch.randn(num_labels, dim))
         torch.nn.init.xavier_normal_(self.weight)
         self.kwargs_mining = {
             "keep_ratio": keep_ratio,
             "batch_size": batch_size,
-            "distance_type": distance_type,
+            "distance_mining": distance_mining,
         }
-        self.normalize = normalize
+        self.distance_prediction = distance_prediction
 
     def forward(self, tensor: torch.Tensor, target: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         target_new, subsample = mine_targets_by_distance(tensor, self.weight, target, **self.kwargs_mining)
         weight = self.weight[subsample]
-        if self.normalize:
+        if self.distance_prediction == "cosine":
             tensor = F.normalize(tensor, dim=-1)
             weight = F.normalize(weight, dim=-1)
 
@@ -151,7 +151,7 @@ class HeadWithTargetMining(torch.nn.Module):
 
     def extra_repr(self) -> str:
         return (
-            f"dim={self.dim}, num_classes={self.num_classes}, "
+            f"dim={self.dim}, num_labels={self.num_labels}, "
             f"keep_ratio={self.kwargs_mining['keep_ratio']}, "
             f"batch_size={self.kwargs_mining['batch_size']}"
         )
