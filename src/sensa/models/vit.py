@@ -142,8 +142,8 @@ class VIT(BaseModel):
             Dimensionality of the MLP in each transformer block.
         mask_ratio (float, optional):
             Fraction of tokens to mask during training (for masked autoencoding). Defaults to 0.0.
-        num_classes (int, optional):
-            Number of classes for classification head. Defaults to 1000 (e.g., ImageNet).
+        num_labels (int, optional):
+            Number of labels for classification head. Defaults to 1000 (e.g., ImageNet).
         in_channels (int, optional):
             Number of input channels. Defaults to 3 (RGB).
         first_stride (int, optional):
@@ -175,7 +175,7 @@ class VIT(BaseModel):
         hidden_dim: int,
         mlp_dim: int,
         mask_ratio: float = 0.0,
-        num_classes: int | None = 1000,
+        num_labels: int | None = 1000,
         in_channels: int = 3,
         first_stride: int = 2,
         last_stride: int = 4,
@@ -194,7 +194,7 @@ class VIT(BaseModel):
         self.hidden_dim = hidden_dim
         self.mlp_dim = mlp_dim
         self.mask_ratio = mask_ratio
-        self.num_classes = num_classes
+        self.num_labels = num_labels
         self.last_pool = last_pool
         if norm_layer is None:
             norm_layer = partial(torch.nn.LayerNorm, eps=1e-6)
@@ -243,14 +243,14 @@ class VIT(BaseModel):
 
         if self.last_pool is not None:
             self.pool = LastPool(pool=self.last_pool, size=self.stem_size)
-            if isinstance(self.num_classes, int) and self.num_classes:
+            if isinstance(self.num_labels, int) and self.num_labels:
                 if self.last_pool in ("avg", "token"):
-                    self.head = torch.nn.Linear(self.hidden_dim, self.num_classes)
+                    self.head = torch.nn.Linear(self.hidden_dim, self.num_labels)
                 if self.last_pool == "full":
-                    self.head = torch.nn.Linear(self.hidden_dim * self.seq_length, self.num_classes)
+                    self.head = torch.nn.Linear(self.hidden_dim * self.seq_length, self.num_labels)
                 if self.last_pool == "half":
                     h, w = self.pool.size_after_pool
-                    self.head = torch.nn.Linear(self.hidden_dim * h * w, self.num_classes)
+                    self.head = torch.nn.Linear(self.hidden_dim * h * w, self.num_labels)
 
                 torch.nn.init.normal_(self.head.weight, std=0.01)
                 torch.nn.init.zeros_(self.head.bias)
