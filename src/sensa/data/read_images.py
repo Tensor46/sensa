@@ -19,7 +19,7 @@ def read_label_per_folder(
         path (pathlib.Path):
             Root directory where each immediate subdirectory represents a class label.
         start_label_id_at (int, default=0):
-            Integer to start labeling classes from.
+            Integer to start labeling samples from.
         stop_label_id_at (int | None, default=None):
             Exclusive upper bound on label IDs; if reached, remaining folders are skipped.
         max_samples_per_label (int | float | None, default=None):
