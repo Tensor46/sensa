@@ -27,7 +27,7 @@ backbone:
   hidden_dim: 256
   mlp_dim: 1024
   mask_ratio: 0.0
-  num_classes: 1000
+  num_labels: 1000
   in_channels: 3
   first_stride: 2
   last_pool: half
