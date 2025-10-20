@@ -73,12 +73,12 @@ class CrossEntropyWithTargetMining(BaseLoss):
         label_smoothing: float = 0.0,
         keep_ratio: float = 0.5,
         batch_size: int = 50_000,
-        distance_type: Literal["cosine", "euclidean"] = "cosine",
-        normalize: bool = False,
+        distance_mining: Literal["cosine", "euclidean"] = "cosine",
+        distance_prediction: Literal["dot", "cosine"] = "dot",
     ):
         """Initialize."""
         super().__init__()
-        self.head = HeadWithTargetMining(dim, num_labels, keep_ratio, batch_size, distance_type, normalize)
+        self.head = HeadWithTargetMining(dim, num_labels, keep_ratio, batch_size, distance_mining, distance_prediction)
         self.kwargs = {
             "weight": weight,
             "size_average": size_average,

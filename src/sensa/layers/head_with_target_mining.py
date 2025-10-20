@@ -112,7 +112,9 @@ class HeadWithTargetMining(torch.nn.Module):
         distance_mining: "cosine" or "euclidean".
             - "cosine" uses max cosine similarity (higher = closer)
             - "euclidean" uses min Euclidean distance (lower = closer)
-        normalize: whether to normalize the input features and weight vectors.
+        distance_prediction: "dot" or "cosine".
+            - "dot" uses dot product (higher = closer)
+            - "cosine" uses cosine similarity (higher = closer)
 
     Returns:
         output: (B, num_labels) output tensor.
