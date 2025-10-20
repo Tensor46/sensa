@@ -26,7 +26,7 @@ class DataParams(BaseParams):
             All other parameters are captured here.
     """
 
-    path: tuple[pathlib.Path]
+    path: tuple[pathlib.Path, ...]
     size: tuple[int, int]
     mode: Annotated[Literal["RGB", "RGBA", "L"], pydantic.Field(default="RGB")]
     interpolation: Annotated[Literal[2, 3], pydantic.Field(default=2)]
