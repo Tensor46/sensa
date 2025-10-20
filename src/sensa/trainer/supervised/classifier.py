@@ -54,7 +54,7 @@ class ClassifierWithOutValidation(BaseLightningVision):
         """Execute one training iteration.
 
         - Updates learning rate scheduler.
-        - Computes cross-entropy loss.
+        - Computes loss.
         - Logs loss, learning rate, and top-1 accuracy.
         """
         # update learning rate

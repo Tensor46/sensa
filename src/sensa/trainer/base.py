@@ -216,3 +216,12 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
             tv2.functional.to_pil_image(tensor).save(f"./checkpoints/{self.name}.png")
         else:
             torch.save({"tensor": tensor}, f"./checkpoints/{self.name}.bin")
+
+    @staticmethod
+    def all_gather(tensor: torch.Tensor) -> torch.Tensor:
+        if torch.cuda.is_available() and torch.distributed.is_available():
+            if torch.distributed.is_initialized() and (world_size := torch.distributed.get_world_size()) > 1:
+                tlist = [torch.empty_like(tensor) for _ in range(world_size)]
+                torch.distributed.all_gather(tlist, tensor)
+                tensor = torch.cat(tlist, dim=0)
+        return tensor
