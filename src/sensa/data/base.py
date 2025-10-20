@@ -113,3 +113,6 @@ class BaseImageFolder(ABC):
         if isinstance(self.transforms, list | tuple):
             return (t(tensor) for t in self.transforms)
         return (self.transforms(tensor),)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(num_labels={self.num_labels}, num_samples={len(self)})"
