@@ -21,23 +21,33 @@ backbone:
   image_size:
     - 128
     - 128
-  patch_size: 8
-  num_layers: 8
-  num_heads: 8
-  hidden_dim: 256
-  mlp_dim: 1024
+  stem_config:
+    in_channels: 3
+    out_channels: 256
+    patch_size: 8
+    first_stride: 2
+    last_stride: 4
+    act_layer: silu
+    norm_layer: rmsnorm
+  encoder_config:
+    size: null
+    extra_tokens: null
+    num_layers: 8
+    num_heads: 8
+    hidden_dim: 256
+    mlp_dim: 1024
+    dropout: 0.0
+    act_layer: gelu
+    norm_layer: rmsnorm
+    pos_token: rope
+    frequency: 10000.0
   mask_ratio: 0.0
   num_labels: 1000
-  in_channels: 3
-  first_stride: 2
   last_pool: half
-  last_stride: 4
-  pos_token: "sincos"
-
   mode: full
   skip_freeze_prefixes:
     - head
-  path_to_checkpoint: "./checkpoints/mae_minivit_imagenet_epoch=99.ckpt"
+  path_to_checkpoint: "./checkpoints/mae_minivit_imagenet_epoch=37.ckpt"
 
 loss:
   name: CrossEntropyLoss

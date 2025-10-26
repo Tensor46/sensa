@@ -12,18 +12,29 @@ mae_encoder:
   image_size:
     - 128
     - 128
-  patch_size: 8
-  num_layers: 8
-  num_heads: 8
-  hidden_dim: 256
-  mlp_dim: 1024
+  stem_config:
+    in_channels: 3
+    out_channels: 256
+    patch_size: 8
+    first_stride: 2
+    last_stride: 4
+    act_layer: silu
+    norm_layer: rmsnorm
+  encoder_config:
+    size: null
+    extra_tokens: null
+    num_layers: 8
+    num_heads: 8
+    hidden_dim: 256
+    mlp_dim: 1024
+    dropout: 0.0
+    act_layer: gelu
+    norm_layer: rmsnorm
+    pos_token: rope
+    frequency: 10000.0
   mask_ratio: 0.75
   num_labels: null
-  in_channels: 3
-  first_stride: 2
   last_pool: half
-  last_stride: 4
-  pos_token: "rope"
 
 mae_decoder:
   name: MAEDecoder

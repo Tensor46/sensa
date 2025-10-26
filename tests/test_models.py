@@ -38,38 +38,66 @@ def test_registry_cannot_use_existing_name():
 def test_vit_features():
     model = sensa.models.VIT(
         image_size=(128, 128),
-        patch_size=8,
-        num_layers=2,
-        num_heads=4,
-        hidden_dim=128,
-        mlp_dim=256,
+        stem_config={
+            "in_channels": 3,
+            "out_channels": 128,
+            "patch_size": 8,
+            "first_stride": 2,
+            "last_stride": 4,
+            "act_layer": "silu",
+            "norm_layer": "batchnorm",
+        },
+        encoder_config={
+            "size": None,
+            "extra_tokens": None,
+            "num_layers": 2,
+            "num_heads": 4,
+            "hidden_dim": 128,
+            "mlp_dim": 256,
+            "dropout": 0.0,
+            "act_layer": "gelu",
+            "norm_layer": "layernorm",
+            "pos_token": "sincos",
+        },
         mask_ratio=0.0,
         num_labels=None,
-        in_channels=3,
         last_pool=None,
-        pos_token="sincos",
     )
     output = model(torch.randn(1, 3, 128, 128))
-    assert output.shape[-1] == model.hidden_dim, f"output shape must be {output.shape}"
-    assert output.shape[-2] == model.seq_length, f"output shape must be {output.shape}"
+    assert output.shape[-1] == model.encoder_config.hidden_dim, f"output shape must be {output.shape}"
+    assert output.shape[-2] == model.encoder_config.seq_length, f"output shape must be {output.shape}"
     del model
 
 
 def test_vit_features_with_pool():
     model = sensa.models.VIT(
         image_size=(128, 128),
-        patch_size=8,
-        num_layers=2,
-        num_heads=4,
-        hidden_dim=128,
-        mlp_dim=256,
+        stem_config={
+            "in_channels": 3,
+            "out_channels": 128,
+            "patch_size": 8,
+            "first_stride": 2,
+            "last_stride": 4,
+            "act_layer": "silu",
+            "norm_layer": "batchnorm",
+        },
+        encoder_config={
+            "size": None,
+            "extra_tokens": None,
+            "num_layers": 2,
+            "num_heads": 4,
+            "hidden_dim": 128,
+            "mlp_dim": 256,
+            "dropout": 0.0,
+            "act_layer": "gelu",
+            "norm_layer": "layernorm",
+            "pos_token": "rope",
+        },
         mask_ratio=0.0,
         num_labels=None,
-        in_channels=3,
         last_pool="half",
-        pos_token="rope",
     )
     output = model(torch.randn(1, 3, 128, 128))
-    size = model.hidden_dim * (model.stem_size[0] // 2) * (model.stem_size[1] // 2)
+    size = model.encoder_config.hidden_dim * (model.stem_size[0] // 2) * (model.stem_size[1] // 2)
     assert output.shape[-1] == size, f"output shape must be {output.shape}"
     del model

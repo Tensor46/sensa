@@ -177,3 +177,4 @@ internal_examples/
 to_delete/
 *.ckpt
 test*.ipynb
+sync.sh
