@@ -13,12 +13,7 @@ class RegularizeDP(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(
-        ctx,
-        x: torch.Tensor,
-        p: float = 0.05,
-        scale: bool = True,
-    ) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, p: float = 0.05, scale: bool = True) -> torch.Tensor:
         with torch.no_grad():
             shape = [1 if i else x.size(0) for i in range(x.ndim)]
             picks = torch.ones(x.size(0), device=x.device)
@@ -47,12 +42,7 @@ class RegularizeJA(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(
-        ctx,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        gamma: float = 0.25,
-    ) -> torch.Tensor:
+    def forward(ctx, x: torch.Tensor, y: torch.Tensor, gamma: float = 0.25) -> torch.Tensor:
         with torch.no_grad():
             shape = [1 if i else x.size(0) for i in range(x.ndim)]
             alpha = torch.rand(shape, dtype=x.dtype, device=x.device)
