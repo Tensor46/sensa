@@ -117,12 +117,12 @@ class MAE(BaseLightningVision):
         # decode to reconstruct all patches
         rimages = self.decoder(o_encoded)
         # prepare original patches for loss
-        ps = self.params.mae_encoder.kwargs["patch_size"]
+        ps = self.params.mae_encoder.kwargs["stem_config"]["patch_size"]
         oimages = einops.rearrange(
             (images - 0.5) / 0.25,
             "b c (h ph) (w pw) -> b (h w) (ph pw c)",
-            ph=self.params.mae_encoder.kwargs["patch_size"],
-            pw=self.params.mae_encoder.kwargs["patch_size"],
+            ph=self.params.mae_encoder.kwargs["stem_config"]["patch_size"],
+            pw=self.params.mae_encoder.kwargs["stem_config"]["patch_size"],
         )
         # mask and select only the reconstructed patches
         rpatches = mask_tensor(rimages, indices_to_mask)
