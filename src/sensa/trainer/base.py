@@ -32,12 +32,10 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
 
         Fields:
             data (DataParams | None): Parameters for the training dataset.
-            data_test (DataParams | None): Parameters for the validation/test dataset.
             trainer (TrainerParams): Training loop and optimizer parameters.
         """
 
         data: DataParams | None = None
-        data_test: DataParams | None = None
         trainer: TrainerParams
 
     __dataset__ = BaseImageFolder
@@ -60,9 +58,9 @@ class BaseLightningVision(L.LightningModule, abc.ABC):
         if self.params.data is not None:
             logging.info(f"{self.__class__.__name__}: loading training data.")
             self.data = self.__dataset__(params=self.params.data)
-        if self.params.data_test is not None:
-            logging.info(f"{self.__class__.__name__}: loading test data.")
-            self.data_test = self.__dataset__(params=self.params.data_test)
+        if self.params.data.has_validation:
+            logging.info(f"{self.__class__.__name__}: loading validation data.")
+            self.data_validation = self.__dataset__(params=self.params.data, load_validation=True)
         self.auto_scale_lr()
         self.set_iterations()
 

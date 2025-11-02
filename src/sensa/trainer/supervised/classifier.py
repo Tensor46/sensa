@@ -101,9 +101,6 @@ class ClassifierWithOutValidation(BaseLightningVision):
 class Classifier(ClassifierWithOutValidation):
     """Extends ClassifierWithOutValidation by adding validation logic."""
 
-    class Params(ClassifierWithOutValidation.Params):
-        data_test: DataParams
-
     def validation_step(self, batch: list[torch.Tensor], batch_idx: int) -> torch.Tensor:
         """Execute one validation iteration."""
         # unpack batch
@@ -120,7 +117,7 @@ class Classifier(ClassifierWithOutValidation):
         """Build and return the validation DataLoader."""
         self.set_iterations()
         return torch.utils.data.DataLoader(
-            self.data_test,
+            self.data_validation,
             batch_size=self.params.trainer.batch_size_per_gpu // 2,
             shuffle=False,
             num_workers=self.params.trainer.workers_per_gpu,
