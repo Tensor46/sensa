@@ -5,7 +5,6 @@ data:
     - 128
   mode: "RGB"
   interpolation: 2
-  is_test: false
 
 mae_encoder:
   name: VIT

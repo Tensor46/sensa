@@ -178,3 +178,4 @@ to_delete/
 *.ckpt
 test*.ipynb
 sync.sh
+mae*.png

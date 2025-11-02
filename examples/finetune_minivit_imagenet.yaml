@@ -1,20 +1,11 @@
 data:
   path: /raid/public/imagenet/train
+  path_validation: /raid/public/imagenet/validation
   size:
     - 128
     - 128
   mode: "RGB"
   interpolation: 2
-  is_test: False
-
-data_test:
-  path: /raid/public/imagenet/validation
-  size:
-    - 128
-    - 128
-  mode: "RGB"
-  interpolation: 2
-  is_test: true
 
 backbone:
   name: VIT
