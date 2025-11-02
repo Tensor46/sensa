@@ -14,6 +14,8 @@ class DataParams(BaseParams):
     ------
         path (tuple[pathlib.Path]):
             One or more directories, each containing subfolders per class label.
+        path_validation (tuple[pathlib.Path] | None, default=None):
+            One or more directories, each containing subfolders per class label.
         size (tuple[int, int]):
             Desired output image size as (height, width).
         mode (Literal["RGB", "L"], default="RGB"):
@@ -27,14 +29,16 @@ class DataParams(BaseParams):
     """
 
     path: tuple[pathlib.Path, ...]
+    path_validation: tuple[pathlib.Path, ...] | None = None
     size: tuple[int, int]
     mode: Annotated[Literal["RGB", "RGBA", "L"], pydantic.Field(default="RGB")]
     interpolation: Annotated[Literal[2, 3], pydantic.Field(default=2)]
-    is_test: Annotated[bool, pydantic.Field(default=False)]
 
-    @pydantic.field_validator("path", mode="before")
+    @pydantic.field_validator("path", "path_validation", mode="before")
     @classmethod
     def validate_path(cls, data: Any) -> tuple[pathlib.Path]:
+        if data is None:
+            return None
         if isinstance(data, pathlib.Path | str):
             data = [data]
         if isinstance(data, list | tuple):
@@ -45,3 +49,7 @@ class DataParams(BaseParams):
         if isinstance(data, list | tuple):  # full path
             data = tuple(x.resolve() for x in data)
         return data
+
+    @property
+    def has_validation(self) -> bool:
+        return self.path_validation is not None
