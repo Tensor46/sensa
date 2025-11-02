@@ -86,8 +86,8 @@ class Dataset(BaseImageFolder):
         num_local_transforms = self.params.kwargs["num_local_transforms"]
         return [global_transforms_a, global_transforms_b, *([local_transforms] * num_local_transforms)]
 
-    def default_transforms_test(self) -> tv2.Compose:
-        """Build and return the test/eval transform pipeline."""
+    def default_transforms_validation(self) -> tv2.Compose:
+        """Build and return the validation transform pipeline."""
         return tv2.Compose(
             [
                 tv2.CenterCrop(size=self.params.size),

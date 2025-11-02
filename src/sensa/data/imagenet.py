@@ -23,8 +23,8 @@ class Dataset(BaseImageFolder):
             ]
         )
 
-    def default_transforms_test(self) -> tv2.Compose:
-        """Build and return the test/eval transform pipeline."""
+    def default_transforms_validation(self) -> tv2.Compose:
+        """Build and return the validation transform pipeline."""
         return tv2.Compose(
             [
                 tv2.Resize(

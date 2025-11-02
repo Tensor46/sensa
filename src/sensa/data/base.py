@@ -33,6 +33,7 @@ class BaseImageFolder(ABC):
         Args:
             kwargs: Either a `__params__` instance or keyword args for DataParams.
         """
+        self.load_validation: bool = kwargs.pop("load_validation", False)
         self.dbase: list[tuple[pathlib.Path, int]] = []
         self.num_labels: int = 0
 
@@ -41,10 +42,10 @@ class BaseImageFolder(ABC):
             kwargs = kwargs["params"].model_dump()
         self.params = self.__params__(**self.default_specs(**kwargs))
         # populate the internal database and label count
-        for path in self.params.path:
+        for path in self.params.path_validation if self.load_validation else self.params.path:
             self.add_to_dbase(path)
-        # choose transforms based on test/train mode
-        self._transforms = self.default_transforms_test() if self.params.is_test else self.default_transforms()
+        # choose transforms based on training/validation mode
+        self._transforms = self.default_transforms_validation() if self.load_validation else self.default_transforms()
 
     def add_to_dbase(self, path: pathlib.Path) -> None:
         """Add samples to dbase given path."""
@@ -91,8 +92,8 @@ class BaseImageFolder(ABC):
         ...
 
     @abstractmethod
-    def default_transforms_test(self) -> tv2.Compose | list[tv2.Compose]:
-        """Define and return test transforms."""
+    def default_transforms_validation(self) -> tv2.Compose | list[tv2.Compose]:
+        """Define and return validation transforms."""
         ...
 
     @property
