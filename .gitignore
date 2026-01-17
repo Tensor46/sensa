@@ -179,3 +179,4 @@ to_delete/
 test*.ipynb
 sync.sh
 mae*.png
+xdev.py

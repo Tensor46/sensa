@@ -74,3 +74,52 @@ class LastPool(torch.nn.Module):
     def fn_token(self, tensor: torch.Tensor, **kwargs) -> torch.Tensor:
         """Select the first token (class token) → (B, C)."""
         return tensor[:, 0, :]
+
+
+class LastPool4D(torch.nn.Module):
+    """Flexible pooling over the H & W dimension of a tensor.
+
+    Supports three modes:
+      - "avg": average over h and w, output shape (B, C)
+      - "full": flatten all features, h & w, output shape (B, C*H*W)
+      - "half": maxpool to (H/2 x W/2), then flatten
+
+    Args:
+        pool ("avg" | "full" | "half", default="avg"):
+            Pooling strategy
+    """
+
+    def __init__(self, pool: Literal["avg", "full", "half"] = "avg"):
+        super().__init__()
+        if not isinstance(pool, str):
+            logging.error(f"LastPool4d: pool must be 'avg' | 'full' | 'half' - {pool}.")
+            raise TypeError(f"LastPool4d: pool must be 'avg' | 'full' | 'half' - {pool}")
+        if pool not in ("avg", "full", "half"):
+            logging.error(f"LastPool4d: pool must be 'avg' | 'full' | 'half' - {pool}.")
+            raise ValueError(f"LastPool4d: pool must be 'avg' | 'full' | 'half' - {pool}")
+        self.pool = pool
+
+        match self.pool:
+            case "full":
+                self.fn = self.fn_full
+            case "half":
+                self.fn = self.fn_half
+            case _:  # default
+                self.fn = self.fn_avg
+
+    def forward(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Apply the selected pooling function."""
+        return self.fn(tensor)
+
+    def fn_avg(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Mean over the h & w dimension → (B, C)."""
+        return tensor.mean((2, 3))
+
+    def fn_full(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Flatten all dimensions → (B, C·H·W)."""
+        return tensor.flatten(1)
+
+    def fn_half(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Maxpool by 2, then flatten."""
+        o = torch.nn.functional.max_pool2d(tensor, 2, 2)
+        return o.flatten(1)
