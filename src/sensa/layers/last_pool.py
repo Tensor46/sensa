@@ -6,11 +6,11 @@ import torch
 
 
 class LastPool(torch.nn.Module):
-    """Flexible pooling over the token dimension of a tensor.
+    """Flexible pooling over the feature & token dimension of a tensor.
 
     Supports four modes:
-      - "avg": sum over tokens, output shape (B, C)
-      - "full": flatten all tokens, output shape (B, C*N)
+      - "avg": mean over token dimension, output shape (B, C)
+      - "full": flatten all features & tokens, output shape (B, C*N)
       - "half": reshape tokens to HxW and maxpool to (H/2 x W/2), then flatten
       - "token": select the first token, output shape (B, C)
 
@@ -58,11 +58,11 @@ class LastPool(torch.nn.Module):
         return self.fn(tensor, **kwargs)
 
     def fn_avg(self, tensor: torch.Tensor, **kwargs) -> torch.Tensor:
-        """Sum over the token dimension → (B, C)."""
-        return tensor.sum(1)
+        """Mean over the token dimension → (B, C)."""
+        return tensor.mean(1)
 
     def fn_full(self, tensor: torch.Tensor, flatten: bool = True) -> torch.Tensor:
-        """Flatten all tokens → (B, C·N)."""
+        """Flatten all featues & tokens → (B, C·N)."""
         return tensor.permute(0, 2, 1).flatten(1) if flatten else tensor.permute(0, 2, 1)
 
     def fn_half(self, tensor: torch.Tensor, flatten: bool = True) -> torch.Tensor:
