@@ -17,6 +17,7 @@ class RegularizedResidual(nn.Module):
         non_linear (nn.Module | None): non-linear module (default is None)
         p_regularize_dp (float): dropout rate for the DP regularization (default is 0.0)
         p_regularize_ja (float): dropout rate for the JA regularization (default is 0.0)
+        add_non_residue_scaler (bool): whether to add a scaler (default is False)
     """
 
     def __init__(
@@ -26,6 +27,7 @@ class RegularizedResidual(nn.Module):
         non_linear: Callable[..., nn.Module] = nn.Identity,
         p_regularize_dp: float = 0.0,
         p_regularize_ja: float = 0.0,
+        add_non_residue_scaler: bool = False,
         **kwargs,
     ):
         super().__init__()
@@ -36,6 +38,8 @@ class RegularizedResidual(nn.Module):
 
         self.p_regularize_dp = p_regularize_dp
         self.p_regularize_ja = p_regularize_ja
+        self.add_non_residue_scaler = add_non_residue_scaler
+        self.gamma = nn.Parameter(torch.tensor(1e-6).float()) if add_non_residue_scaler else None
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
         residue = self.residue(tensor) if self.residue is not None else tensor
@@ -51,6 +55,8 @@ class RegularizedResidual(nn.Module):
             )
             return self.non_linear(o)
 
+        if self.gamma is not None:
+            o = o * self.gamma
         if self.training and self.p_regularize_ja > 0:  # jitter and add
             o = RegularizeJA.apply(residue, o, self.p_regularize_ja)
             return self.non_linear(o)
@@ -58,4 +64,7 @@ class RegularizedResidual(nn.Module):
         return self.non_linear(residue + o)
 
     def extra_repr(self) -> str:
-        return f"[p_regularize_dp={self.p_regularize_dp}, p_regularize_ja={self.p_regularize_ja}]"
+        return (
+            f"[p_regularize_dp={self.p_regularize_dp}, p_regularize_ja={self.p_regularize_ja}, "
+            f"add_non_residue_scaler={self.add_non_residue_scaler}]"
+        )
