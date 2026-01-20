@@ -143,7 +143,7 @@ class MAE(BaseLightningVision):
                 ph=ps,
                 pw=ps,
                 h=self.params.mae_encoder.kwargs["image_size"][0] // ps,
-                w=self.params.mae_encoder.kwargs["image_size"][0] // ps,
+                w=self.params.mae_encoder.kwargs["image_size"][1] // ps,
             )
             self.save_as_image(canvas, cols=6)
 
