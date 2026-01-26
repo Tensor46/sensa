@@ -1,6 +1,7 @@
 __all__ = [
     "_LOSS_REGISTRY",
     "BaseLoss",
+    "CosFace",
     "CrossEntropyLoss",
     "CrossEntropyWithTargetMining",
     "DinoLoss",
@@ -11,6 +12,7 @@ __all__ = [
 
 
 from sensa.loss.base import BaseLoss
+from sensa.loss.cosface import CosFace
 from sensa.loss.cross_entropy import CrossEntropyLoss, CrossEntropyWithTargetMining
 from sensa.loss.dino_loss import DinoLoss
 from sensa.loss.mse_loss import MSELoss
