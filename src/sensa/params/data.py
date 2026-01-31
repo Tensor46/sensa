@@ -53,3 +53,14 @@ class DataParams(BaseParams):
     @property
     def has_validation(self) -> bool:
         return self.path_validation is not None
+
+    @property
+    def input_shape(self) -> tuple[int, int, int, int]:
+        match self.mode:
+            case "RGB":
+                channels = 3
+            case "RGBA":
+                channels = 4
+            case "L":
+                channels = 1
+        return (1, channels, *self.size)
