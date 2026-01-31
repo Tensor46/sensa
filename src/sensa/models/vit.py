@@ -11,15 +11,14 @@ import torch
 import torchvision as tv
 
 from sensa.layers import mask_utils
-from sensa.layers.dyt import DyT2D
 from sensa.layers.encoder import Encoder2, Encoder2Config
 from sensa.layers.last_pool import LastPool
-from sensa.layers.rmsnorm import RMSNorm2D
 from sensa.models.base import BaseModel
 from sensa.models.registry import register_model
+from sensa.params.layer import ActivationParams, Norm2dParams
 
 
-class StemConfig(pydantic.BaseModel):
+class StemConfig(ActivationParams, Norm2dParams):
     """
     Parameters:
         in_channels (int, optional):
@@ -55,38 +54,6 @@ class StemConfig(pydantic.BaseModel):
             logging.error(f"VIT: out_channels must be an integer and multiple of 32 - {value}.")
             raise ValueError(f"out_channels must be an integer and multiple of 32 - {value}.")
         return value
-
-    @pydantic.field_validator("act_layer", mode="before")
-    @classmethod
-    def validate_act_layer(cls, data: Callable[..., torch.nn.Module] | str) -> Callable[..., torch.nn.Module]:
-        """Validate the activation layer."""
-        match data:
-            case "gelu":
-                data = torch.nn.GELU
-            case "mish":
-                data = torch.nn.Mish
-            case "relu":
-                data = torch.nn.ReLU
-            case "silu":
-                data = torch.nn.SiLU
-        return data
-
-    @pydantic.field_validator("norm_layer", mode="before")
-    @classmethod
-    def validate_norm_layer(cls, data: Callable[..., torch.nn.Module] | str) -> Callable[..., torch.nn.Module]:
-        """Validate the normalization layer."""
-        match data:
-            case "batchnorm":
-                data = torch.nn.BatchNorm2d
-            case "dyt":
-                data = DyT2D
-            case "instancenorm":
-                data = torch.nn.InstanceNorm2d
-            case "layernorm":
-                data = tv.models.convnext.LayerNorm2d
-            case "rmsnorm":
-                data = RMSNorm2D
-        return data
 
 
 def build_stem(stem_config: StemConfig) -> torch.nn.Sequential:
