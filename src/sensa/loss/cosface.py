@@ -33,7 +33,7 @@ class CosFace(CrossEntropyWithTargetMining):
         s: float = 32,
     ):
         # setting distance mining and prediction to cosine
-        kwargs = {"distance_mining": "cosine", "distance_prediction": "cosine", "m": m, "s": s}
+        kwargs = {"distance_mining": "cosine", "distance_prediction": "cosine"}
         # margin & scale
         self.m: float = m
         self.s: float = s
