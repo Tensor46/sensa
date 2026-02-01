@@ -10,9 +10,8 @@ import torchvision as tv
 
 from sensa.layers import mask_utils
 from sensa.layers.attention import EncoderLayer
-from sensa.layers.dyt import DyT
 from sensa.layers.positional_tokens import sincos_2d_positional_encoding
-from sensa.layers.rmsnorm import RMSNorm
+from sensa.params.layer import ActivationParams, NormParams
 
 
 class Encoder(tv.models.vision_transformer.Encoder):
@@ -75,72 +74,6 @@ class Encoder(tv.models.vision_transformer.Encoder):
         self.is_sincos_pos_token = True
 
 
-class Encoder2Config(pydantic.BaseModel):
-    """
-    Parameters:
-        size (tuple[int, int]): (height, width) of the image after patching.
-        extra_tokens (int): number of extra tokens (e.g., class token).
-        num_layers (int): number of layers.
-        num_heads (int): number of heads.
-        hidden_dim (int): hidden dimension.
-        mlp_dim (int): mlp hidden dimension.
-        dropout (float): drop path rate (default: 0.0)
-        act_layer (Callable[..., torch.nn.Module]): activation layer (default: torch.nn.GELU).
-        norm_layer (Callable[..., torch.nn.Module]): normalization layer (default: torch.nn.LayerNorm).
-        pos_token (Literal["learned", "sincos", "rope"]): positional token type (default: "learned").
-        frequency (float): frequency for the RoPE embeddings (default: 10000.0).
-    """
-
-    size: tuple[int, int]
-    extra_tokens: int
-    num_layers: int
-    num_heads: int
-    hidden_dim: int
-    mlp_dim: int
-    dropout: float = pydantic.Field(..., ge=0.0, lt=1.0)
-    act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU
-    norm_layer: Callable[..., torch.nn.Module] = partial(torch.nn.LayerNorm, eps=1e-6)
-    pos_token: Literal["learned", "sincos", "rope"] = "learned"
-    frequency: float = 10000.0
-
-    @pydantic.field_validator("size", mode="before")
-    @classmethod
-    def validate_size(cls, data: int | tuple[int, int]) -> tuple[int, int]:
-        return (data, data) if isinstance(data, int) else data
-
-    @pydantic.field_validator("act_layer", mode="before")
-    @classmethod
-    def validate_act_layer(cls, data: Callable[..., torch.nn.Module] | str) -> Callable[..., torch.nn.Module]:
-        """Validate the activation layer."""
-        match data:
-            case "gelu":
-                data = torch.nn.GELU
-            case "mish":
-                data = partial(torch.nn.Mish, inplace=True)
-            case "relu":
-                data = partial(torch.nn.ReLU, inplace=True)
-            case "silu":
-                data = partial(torch.nn.SiLU, inplace=True)
-        return data
-
-    @pydantic.field_validator("norm_layer", mode="before")
-    @classmethod
-    def validate_norm_layer(cls, data: Callable[..., torch.nn.Module] | str) -> Callable[..., torch.nn.Module]:
-        """Validate the normalization layer."""
-        match data:
-            case "dyt":
-                data = DyT
-            case "layernorm":
-                data = partial(torch.nn.LayerNorm, eps=1e-6)
-            case "rmsnorm":
-                data = partial(RMSNorm, eps=1e-6)
-        return data
-
-    @property
-    def seq_length(self) -> int:
-        return self.size[0] * self.size[1] + self.extra_tokens
-
-
 class Encoder2(torch.nn.Module):
     """VIT Encoder with positional embedding (Learned or SinCos or RoPE).
 
@@ -158,6 +91,43 @@ class Encoder2(torch.nn.Module):
         frequency (float): frequency for the RoPE embeddings (default: 10000.0).
     """
 
+    class Params(ActivationParams, NormParams):
+        """
+        Parameters:
+            size (tuple[int, int]): (height, width) of the image after patching.
+            extra_tokens (int): number of extra tokens (e.g., class token).
+            num_layers (int): number of layers.
+            num_heads (int): number of heads.
+            hidden_dim (int): hidden dimension.
+            mlp_dim (int): mlp hidden dimension.
+            dropout (float): drop path rate (default: 0.0)
+            act_layer (Callable[..., torch.nn.Module]): activation layer (default: torch.nn.GELU).
+            norm_layer (Callable[..., torch.nn.Module]): normalization layer (default: torch.nn.LayerNorm).
+            pos_token (Literal["learned", "sincos", "rope"]): positional token type (default: "learned").
+            frequency (float): frequency for the RoPE embeddings (default: 10000.0).
+        """
+
+        size: tuple[int, int]
+        extra_tokens: int
+        num_layers: int
+        num_heads: int
+        hidden_dim: int
+        mlp_dim: int
+        dropout: float = pydantic.Field(..., ge=0.0, lt=1.0)
+        act_layer: Callable[..., torch.nn.Module] = torch.nn.GELU
+        norm_layer: Callable[..., torch.nn.Module] = partial(torch.nn.LayerNorm, eps=1e-6)
+        pos_token: Literal["learned", "sincos", "rope"] = "learned"
+        frequency: float = 10000.0
+
+        @pydantic.field_validator("size", mode="before")
+        @classmethod
+        def validate_size(cls, data: int | tuple[int, int]) -> tuple[int, int]:
+            return (data, data) if isinstance(data, int) else data
+
+        @property
+        def seq_length(self) -> int:
+            return self.size[0] * self.size[1] + self.extra_tokens
+
     def __init__(
         self,
         size: tuple[int, int],
@@ -174,7 +144,7 @@ class Encoder2(torch.nn.Module):
         **kwargs,
     ):
         super().__init__()
-        self.config = Encoder2Config(
+        self.params = Encoder2.Params(
             size=size,
             extra_tokens=extra_tokens,
             num_layers=num_layers,
@@ -187,43 +157,43 @@ class Encoder2(torch.nn.Module):
             pos_token=pos_token,
             frequency=frequency,
         )
-        if self.config.pos_token == "learned":
+        if self.params.pos_token == "learned":
             self.pos_token = torch.nn.Parameter(
-                torch.empty(1, self.config.seq_length, self.config.hidden_dim).normal_(std=0.02),
+                torch.empty(1, self.params.seq_length, self.params.hidden_dim).normal_(std=0.02),
             )
-        elif self.config.pos_token == "sincos":
+        elif self.params.pos_token == "sincos":
             self.register_buffer(
                 "pos_token",
                 sincos_2d_positional_encoding(
-                    self.config.hidden_dim,
-                    self.config.extra_tokens,
-                    self.config.size,
+                    self.params.hidden_dim,
+                    self.params.extra_tokens,
+                    self.params.size,
                 )[None],
             )
 
         self.layers = torch.nn.ModuleList(
             [
                 EncoderLayer(
-                    self.config.size,
-                    self.config.num_heads,
-                    self.config.hidden_dim,
-                    self.config.mlp_dim,
-                    self.config.dropout,
-                    self.config.act_layer,
-                    self.config.norm_layer,
-                    extra_tokens=self.config.extra_tokens,
-                    use_rope=self.config.pos_token == "rope",
-                    frequency=self.config.frequency,
+                    self.params.size,
+                    self.params.num_heads,
+                    self.params.hidden_dim,
+                    self.params.mlp_dim,
+                    self.params.dropout,
+                    self.params.act_layer,
+                    self.params.norm_layer,
+                    extra_tokens=self.params.extra_tokens,
+                    use_rope=self.params.pos_token == "rope",
+                    frequency=self.params.frequency,
                 )
-                for _ in range(self.config.num_layers)
+                for _ in range(self.params.num_layers)
             ]
         )
-        self.ln = self.config.norm_layer(self.config.hidden_dim)
+        self.ln = self.params.norm_layer(self.params.hidden_dim)
         self.other_sizes: list[tuple[int, int]] = []
 
     @classmethod
-    def from_config(cls, config: Encoder2Config) -> "Encoder2":
-        return cls(**config.model_dump())
+    def from_params(cls, params: "Encoder2.Params") -> "Encoder2":
+        return cls(**params.model_dump())
 
     def extend_sizes(self, size: tuple[int, int]) -> None:
         if not isinstance(size, list | tuple):
@@ -237,15 +207,15 @@ class Encoder2(torch.nn.Module):
     def forward(self, tensor: torch.Tensor, indices_to_keep: torch.Tensor | None = None) -> torch.Tensor:
         torch._assert(tensor.dim() == 3, f"Expected (batch_size, seq_length, hidden_dim) got {tensor.shape}")
         slen = tensor.shape[1]
-        if slen == self.config.seq_length:
-            height, width = self.config.size
+        if slen == self.params.seq_length:
+            height, width = self.params.size
             o = (tensor + self.pos_token) if hasattr(self, "pos_token") else tensor
-        elif any(slen == (sz[0] * sz[1] + self.config.extra_tokens) for sz in self.other_sizes):
-            index = [slen == (sz[0] * sz[1] + self.config.extra_tokens) for sz in self.other_sizes].index(True)
+        elif any(slen == (sz[0] * sz[1] + self.params.extra_tokens) for sz in self.other_sizes):
+            index = [slen == (sz[0] * sz[1] + self.params.extra_tokens) for sz in self.other_sizes].index(True)
             height, width = size = self.other_sizes[index]
             o = (tensor + self.resize_pos_token(size)) if hasattr(self, "pos_token") else tensor
         else:
-            torch._assert(False, f"Invalid tensor.shape - {tensor.shape} | {[self.config.size, *self.other_sizes]}.")
+            torch._assert(False, f"Invalid tensor.shape - {tensor.shape} | {[self.params.size, *self.other_sizes]}.")
 
         if indices_to_keep is not None:
             o = mask_utils.mask_tensor(o, indices_to_keep=indices_to_keep)
@@ -254,8 +224,8 @@ class Encoder2(torch.nn.Module):
         return self.ln(o)
 
     def resize_pos_token(self, size: tuple[int, int]) -> torch.Tensor:
-        pos_token = self.pos_token[:, slice(self.config.extra_tokens, self.pos_token.shape[1])]
-        pos_token = einops.rearrange(pos_token, "b (h w) c -> b c h w", h=self.config.size[0], w=self.config.size[1])
+        pos_token = self.pos_token[:, slice(self.params.extra_tokens, self.pos_token.shape[1])]
+        pos_token = einops.rearrange(pos_token, "b (h w) c -> b c h w", h=self.params.size[0], w=self.params.size[1])
         pos_token = torch.nn.functional.interpolate(
             pos_token,
             size=size,
@@ -264,4 +234,4 @@ class Encoder2(torch.nn.Module):
             antialias=True,
         )
         pos_token = einops.rearrange(pos_token, "b c h w -> b (h w) c")
-        return torch.cat((self.pos_token[:, slice(0, self.config.extra_tokens)], pos_token), dim=1)
+        return torch.cat((self.pos_token[:, slice(0, self.params.extra_tokens)], pos_token), dim=1)
