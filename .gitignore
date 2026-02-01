@@ -180,3 +180,4 @@ test*.ipynb
 sync.sh
 mae*.png
 xdev.py
+.DS_Store

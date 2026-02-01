@@ -123,3 +123,46 @@ class BaseModel(torch.nn.Module, abc.ABC):
         state_dict = torch.load(path, map_location=torch.device("cpu"), weights_only=True)
         state_dict = filter_state_dict(state_dict, "encoder.")
         logging.warning(self.load_state_dict(state_dict, strict=False))
+
+    def export_to_onnx(
+        self,
+        path: pathlib.Path,
+        input_shape: tuple[int, ...],
+        input_names: list[str],
+        output_names: list[str],
+        use_dynamic_axes: bool = True,
+        opset_version: int = 17,
+        do_constant_folding: bool = True,
+        dynamo: bool = True,
+    ) -> None:
+        """Export the model to ONNX format."""
+        is_training = self.training
+        self.eval()
+        if input_names is None:
+            input_names = ["tensor"]
+        if output_names is None:
+            output_names = ["response"]
+        # add batch size to dynamic axes
+        dynamic_axes = {}
+        if use_dynamic_axes:
+            for name in input_names + output_names:
+                dynamic_axes[name] = {0: "batch_size"}
+
+        # export the model
+        torch.onnx.export(
+            self,
+            (torch.randn(*input_shape),),
+            path,
+            input_names=input_names,
+            output_names=output_names,
+            do_constant_folding=do_constant_folding,
+            dynamo=dynamo,
+            dynamic_axes=dynamic_axes,
+            export_params=True,
+            opset_version=opset_version,
+            external_data=False,
+        )
+        if is_training:
+            self.train()
+        else:
+            self.eval()
