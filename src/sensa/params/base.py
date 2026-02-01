@@ -18,7 +18,7 @@ class BaseParams(pydantic.BaseModel, extra="ignore"):
 
         Args:
             path_to_yaml (pathlib.Path):
-                Path to the YAML file containing configuration data.
+                Path to the YAML file containing parameter data.
 
         Returns:
             BaseParams:

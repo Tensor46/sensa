@@ -6,7 +6,7 @@ from sensa.params.base import BaseParams
 
 
 class OptimParams(BaseParams):
-    """Parameters for optimizer configuration.
+    """Parameters for optimizer.
 
     Fields
     ------
