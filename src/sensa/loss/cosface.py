@@ -17,15 +17,39 @@ class CosFace(CrossEntropyWithTargetMining):
         s (float): Scale factor for the logits before computing loss.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        dim: int,
+        num_labels: int,
+        weight: torch.Tensor | None = None,
+        size_average: bool | None = None,
+        ignore_index: int = -100,
+        reduce: bool | None = None,
+        reduction: str = "mean",
+        label_smoothing: float = 0.0,
+        keep_ratio: float = 0.5,
+        batch_size: int = 50_000,
+        m: float = 0.3,
+        s: float = 32,
+    ):
         # setting distance mining and prediction to cosine
-        kwargs["distance_mining"] = "cosine"
-        kwargs["distance_prediction"] = "cosine"
+        kwargs = {"distance_mining": "cosine", "distance_prediction": "cosine", "m": m, "s": s}
         # margin & scale
-        self.m: float = kwargs.pop("m", 0.3)
-        self.s: float = kwargs.pop("s", 32)
-        super().__init__(**kwargs)
-        self.register_buffer("bias", torch.tensor(0.0).float())
+        self.m: float = m
+        self.s: float = s
+        super().__init__(
+            dim=dim,
+            num_labels=num_labels,
+            weight=weight,
+            size_average=size_average,
+            ignore_index=ignore_index,
+            reduce=reduce,
+            reduction=reduction,
+            label_smoothing=label_smoothing,
+            keep_ratio=keep_ratio,
+            batch_size=batch_size,
+            **kwargs,
+        )
 
     def forward(self, tensor: torch.Tensor, target: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Definition."""
@@ -40,4 +64,4 @@ class CosFace(CrossEntropyWithTargetMining):
             margin.scatter_(1, target.view(-1, 1), -self.m, reduce="add")
 
         loss = F.cross_entropy(self.s * (predictions + margin), target)
-        return loss + 0.0 * self.bias
+        return loss
