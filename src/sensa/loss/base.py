@@ -22,14 +22,14 @@ class BaseLoss(torch.nn.Module, abc.ABC):
         Parameters
         ----------
         path_to_yaml : pathlib.Path or str
-            Path to a YAML file containing a dictionary of loss configs.
+            Path to a YAML file containing a dictionary of loss params.
         tag : str
             The key under which this loss's parameters are stored in the YAML.
 
         Returns
         -------
         BaseLoss
-            An instance of `cls`, constructed with `LossParams(**config)`.
+            An instance of `cls`, constructed with `LossParams(**params)`.
         """
         if isinstance(path_to_yaml, str):
             path_to_yaml = pathlib.Path(path_to_yaml)
