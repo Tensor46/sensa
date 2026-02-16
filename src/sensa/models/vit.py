@@ -11,14 +11,14 @@ import torch
 import torchvision as tv
 
 from sensa.layers import mask_utils
-from sensa.layers.encoder import Encoder2, Encoder2Config
+from sensa.layers.encoder import Encoder2
 from sensa.layers.last_pool import LastPool
 from sensa.models.base import BaseModel
 from sensa.models.registry import register_model
 from sensa.params.layer import ActivationParams, Norm2dParams
 
 
-class StemConfig(ActivationParams, Norm2dParams):
+class StemParams(ActivationParams, Norm2dParams):
     """
     Parameters:
         in_channels (int, optional):
@@ -56,7 +56,7 @@ class StemConfig(ActivationParams, Norm2dParams):
         return value
 
 
-def build_stem(stem_config: StemConfig) -> torch.nn.Sequential:
+def build_stem(stem_params: StemParams) -> torch.nn.Sequential:
     """Constructs a convolutional "stem" for patch embedding, using depthwise and
     pointwise convolutions followed by batch normalization.
 
@@ -64,8 +64,8 @@ def build_stem(stem_config: StemConfig) -> torch.nn.Sequential:
     A sequence of inverted residual blocks and downsampling blocks.
 
     Parameters:
-        stem_config (StemConfig):
-            Stem configuration.
+        stem_params (StemConfig):
+            Stem parameters.
 
     Returns:
         A torch.nn.Sequential module comprising:
@@ -78,39 +78,39 @@ def build_stem(stem_config: StemConfig) -> torch.nn.Sequential:
                     [
                         ("down", torch.nn.Conv2d(ic, ic, stride, stride, groups=ic)),
                         ("grow", torch.nn.Conv2d(ic, oc, 1)),
-                        ("norm", stem_config.norm_layer(oc)),
+                        ("norm", stem_params.norm_layer(oc)),
                     ]
                 )
             )
 
     if not (
-        stem_config.patch_size % (stem_config.first_stride * stem_config.last_stride) == 0
-        and math.log2(stem_config.patch_size / stem_config.first_stride / stem_config.last_stride).is_integer()
-        and math.log2(stem_config.patch_size / stem_config.first_stride / stem_config.last_stride) >= 0
+        stem_params.patch_size % (stem_params.first_stride * stem_params.last_stride) == 0
+        and math.log2(stem_params.patch_size / stem_params.first_stride / stem_params.last_stride).is_integer()
+        and math.log2(stem_params.patch_size / stem_params.first_stride / stem_params.last_stride) >= 0
     ):
-        s = stem_config.first_stride * stem_config.last_stride
+        s = stem_params.first_stride * stem_params.last_stride
         msg = f"VIT: patch_size must be [>={s}] and [first_stride * last_stride * powers-of-2] "
-        msg += f"- {stem_config.patch_size}."
+        msg += f"- {stem_params.patch_size}."
         logging.error(msg)
         raise ValueError(msg)
 
-    if not isinstance(stem_config.first_stride, int):
-        logging.error(f"VIT: first_stride must be an integer >= 1 - {stem_config.first_stride}.")
-        raise TypeError(f"first_stride must be an integer >= 1 - {stem_config.first_stride}.")
-    if not isinstance(stem_config.last_stride, int):
-        logging.error(f"VIT: last_stride must be an integer >= 3 - {stem_config.last_stride}.")
-        raise TypeError(f"last_stride must be an integer >= 3 - {stem_config.last_stride}.")
-    if stem_config.last_stride < 3:
-        logging.error(f"VIT: last_stride must be an integer >= 3 - {stem_config.last_stride}.")
-        raise ValueError(f"last_stride must be an integer >= 3 - {stem_config.last_stride}.")
+    if not isinstance(stem_params.first_stride, int):
+        logging.error(f"VIT: first_stride must be an integer >= 1 - {stem_params.first_stride}.")
+        raise TypeError(f"first_stride must be an integer >= 1 - {stem_params.first_stride}.")
+    if not isinstance(stem_params.last_stride, int):
+        logging.error(f"VIT: last_stride must be an integer >= 3 - {stem_params.last_stride}.")
+        raise TypeError(f"last_stride must be an integer >= 3 - {stem_params.last_stride}.")
+    if stem_params.last_stride < 3:
+        logging.error(f"VIT: last_stride must be an integer >= 3 - {stem_params.last_stride}.")
+        raise ValueError(f"last_stride must be an integer >= 3 - {stem_params.last_stride}.")
 
-    # stem and inverted residual config
+    # stem and inverted residual params
     defaults = {"use_se": False, "activation": "HS", "stride": 1, "dilation": 1, "width_mult": 1.0}
     IRC = partial(tv.models.mobilenetv3.InvertedResidualConfig, **defaults)
     IRL = tv.models.mobilenetv3.InvertedResidual
     channels = [
-        stem_config.out_channels // (2**i)
-        for i in range(2 + int(math.log2(stem_config.patch_size / stem_config.first_stride / stem_config.last_stride)))
+        stem_params.out_channels // (2**i)
+        for i in range(2 + int(math.log2(stem_params.patch_size / stem_params.first_stride / stem_params.last_stride)))
     ]
     channels = channels[::-1]
 
@@ -119,21 +119,21 @@ def build_stem(stem_config: StemConfig) -> torch.nn.Sequential:
     stem.add_module(
         "initial",
         tv.ops.Conv2dNormActivation(
-            stem_config.in_channels,
+            stem_params.in_channels,
             channels[0],
-            kernel_size=(stem_config.first_stride + 3)
-            if ((stem_config.first_stride + 3) & 1)
-            else (stem_config.first_stride + 2),
-            stride=stem_config.first_stride,
-            norm_layer=stem_config.norm_layer,
+            kernel_size=(stem_params.first_stride + 3)
+            if ((stem_params.first_stride + 3) & 1)
+            else (stem_params.first_stride + 2),
+            stride=stem_params.first_stride,
+            norm_layer=stem_params.norm_layer,
             activation_layer=torch.nn.SiLU,
         ),
     )
     for i, (ic, oc) in enumerate(pairwise(channels)):
         stage = torch.nn.Sequential()
         for j in range(i + 1):
-            stage.add_module(f"ir_{j}", IRL(IRC(ic, 3, ic, ic), norm_layer=stem_config.norm_layer))
-        stride = 2 if oc != stem_config.out_channels else stem_config.last_stride
+            stage.add_module(f"ir_{j}", IRL(IRC(ic, 3, ic, ic), norm_layer=stem_params.norm_layer))
+        stride = 2 if oc != stem_params.out_channels else stem_params.last_stride
         stage.add_module("down", DownBlock(ic, oc, stride))
         stem.add_module(f"stage_{i}", stage)
 
@@ -148,10 +148,10 @@ class VIT(BaseModel):
     Args:
         image_size (int or tuple[int, int]):
             Height and width of the input image. Must be divisible by patch_size.
-        stem_config (StemConfig | dict[str, Any]):
-            Stem configuration.
-        encoder_config (Encoder2Config | dict[str, Any]):
-            Encoder configuration.
+        stem_params (StemConfig | dict[str, Any]):
+            Stem paramsuration.
+        encoder_params (Encoder2.Params | dict[str, Any]):
+            Encoder parameters.
         mask_ratio (float, optional):
             Fraction of tokens to mask during training (for masked autoencoding). Defaults to 0.0.
         num_labels (int, optional):
@@ -169,54 +169,54 @@ class VIT(BaseModel):
     def __init__(
         self,
         image_size: int | tuple[int, int],
-        stem_config: StemConfig | dict[str, Any],
-        encoder_config: Encoder2Config | dict[str, Any],
+        stem_params: StemParams | dict[str, Any],
+        encoder_params: Encoder2.Params | dict[str, Any],
         mask_ratio: float = 0.0,
         num_labels: int | None = 1000,
         last_pool: Literal["avg", "full", "half", "token", None] = "token",
     ):
         super().__init__()
-        if stem_config["out_channels"] != encoder_config["hidden_dim"]:
+        if stem_params["out_channels"] != encoder_params["hidden_dim"]:
             raise ValueError(
-                f"VIT: stem_config.out_channels must be equal to encoder_config.hidden_dim "
-                f"- {stem_config['out_channels']}-{encoder_config['hidden_dim']}."
+                f"VIT: stem_params.out_channels must be equal to encoder_params.hidden_dim "
+                f"- {stem_params['out_channels']}-{encoder_params['hidden_dim']}."
             )
-        stem_config = StemConfig(**stem_config)
+        stem_params = StemParams(**stem_params)
         self.image_size = torch.nn.modules.utils._pair(image_size)
-        self.patch_size = stem_config.patch_size
-        if image_size[0] % stem_config.patch_size != 0 or image_size[1] % stem_config.patch_size != 0:
-            logging.error(f"VIT: image_size must be divisble by patch_size - {image_size}-{stem_config.patch_size}.")
-            raise ValueError(f"VIT: image_size must be divisble by patch_size - {image_size}-{stem_config.patch_size}.")
+        self.patch_size = stem_params.patch_size
+        if image_size[0] % stem_params.patch_size != 0 or image_size[1] % stem_params.patch_size != 0:
+            logging.error(f"VIT: image_size must be divisble by patch_size - {image_size}-{stem_params.patch_size}.")
+            raise ValueError(f"VIT: image_size must be divisble by patch_size - {image_size}-{stem_params.patch_size}.")
 
         self.mask_ratio = mask_ratio
         self.num_labels = num_labels
         self.last_pool = last_pool
-        self.stem = build_stem(stem_config)
+        self.stem = build_stem(stem_params)
         self.stem_size = self.image_size[0] // self.patch_size, self.image_size[1] // self.patch_size
         extra_tokens: int = 0
         if last_pool == "token":
-            self.class_token = torch.nn.Parameter(torch.zeros(1, 1, encoder_config["hidden_dim"]))
+            self.class_token = torch.nn.Parameter(torch.zeros(1, 1, encoder_params["hidden_dim"]))
             extra_tokens += 1
-        encoder_config["size"] = self.stem_size
-        encoder_config["extra_tokens"] = extra_tokens
-        self.encoder_config = Encoder2Config(**encoder_config)
+        encoder_params["size"] = self.stem_size
+        encoder_params["extra_tokens"] = extra_tokens
+        self.encoder_params = Encoder2.Params(**encoder_params)
 
-        self.encoder = Encoder2.from_config(self.encoder_config)
-        self.seq_length = self.encoder_config.seq_length
+        self.encoder = Encoder2.from_params(self.encoder_params)
+        self.seq_length = self.encoder_params.seq_length
 
         if self.mask_ratio > 0:
-            self.mask_token = torch.nn.Parameter(torch.zeros(self.encoder_config.hidden_dim))
+            self.mask_token = torch.nn.Parameter(torch.zeros(self.encoder_params.hidden_dim))
 
         if self.last_pool is not None:
             self.pool = LastPool(pool=self.last_pool, size=self.stem_size)
             if isinstance(self.num_labels, int) and self.num_labels:
                 if self.last_pool in ("avg", "token"):
-                    self.head = torch.nn.Linear(self.encoder_config.hidden_dim, self.num_labels)
+                    self.head = torch.nn.Linear(self.encoder_params.hidden_dim, self.num_labels)
                 if self.last_pool == "full":
-                    self.head = torch.nn.Linear(self.encoder_config.hidden_dim * self.seq_length, self.num_labels)
+                    self.head = torch.nn.Linear(self.encoder_params.hidden_dim * self.seq_length, self.num_labels)
                 if self.last_pool == "half":
                     h, w = self.pool.size_after_pool
-                    self.head = torch.nn.Linear(self.encoder_config.hidden_dim * h * w, self.num_labels)
+                    self.head = torch.nn.Linear(self.encoder_params.hidden_dim * h * w, self.num_labels)
 
                 torch.nn.init.normal_(self.head.weight, std=0.01)
                 torch.nn.init.zeros_(self.head.bias)
@@ -280,7 +280,7 @@ class VIT(BaseModel):
         n, _, h, w = x.shape
         p = self.patch_size
         x = self.stem(x)
-        x = x.reshape(n, self.encoder_config.hidden_dim, (h // p) * (w // p)).permute(0, 2, 1)
+        x = x.reshape(n, self.encoder_params.hidden_dim, (h // p) * (w // p)).permute(0, 2, 1)
         return x
 
     @property

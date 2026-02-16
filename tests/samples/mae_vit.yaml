@@ -12,7 +12,7 @@ mae_encoder:
   image_size:
     - 128
     - 128
-  stem_config:
+  stem_params:
     in_channels: 3
     out_channels: 128
     patch_size: 8
@@ -20,7 +20,7 @@ mae_encoder:
     last_stride: 4
     act_layer: silu
     norm_layer: batchnorm
-  encoder_config:
+  encoder_params:
     size: null
     extra_tokens: null
     num_layers: 2

@@ -1,3 +1,4 @@
+import pydantic
 import torch
 
 from sensa.params.base import BaseParams
@@ -35,6 +36,12 @@ class TrainerParams(BaseParams):
     optimizer: OptimParams
     seed: int = 46
     workers_per_gpu: int = 4
+
+    @pydantic.field_validator("workers_per_gpu", mode="before")
+    @classmethod
+    def validate_workers_per_gpu(cls, data: int) -> int:
+        gpus = torch.cuda.device_count() if torch.cuda.is_available() and torch.cuda.device_count() else 1
+        return min(data, (torch.get_num_threads() - 2) // gpus)
 
     @property
     def accumulate_grad_batches(self) -> int:
