@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-requirements-txt"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sensa-ml"
+name = "sensa"
 dynamic = ["click", "dependencies", "version"]
 description = 'ML Training Library.'
 readme = "README.md"
@@ -162,3 +162,6 @@ exclude_lines = [
   "if TYPE_CHECKING:",
 ]
 
+[tool.hatch.publish.index.repos.pypi]
+url = "https://upload.pypi.org/legacy/"
+username = "__token__"
