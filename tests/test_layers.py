@@ -53,7 +53,7 @@ def test_cross_attention_layer():
     q = torch.randn(batch_size, h * w, embed_dim)
     kv = torch.randn(batch_size, h_kv * w_kv, embed_dim)
 
-    cross_attention_layer = sensa.layers.attention.CrossAttenttionLayer(
+    cross_attention_layer = sensa.layers.attention.CrossAttentionLayer(
         dim=embed_dim,
         dim_kv=embed_dim,
         num_heads=num_heads,

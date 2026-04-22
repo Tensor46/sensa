@@ -9,9 +9,19 @@ from sensa.layers.base import BaseLayer
 from sensa.layers.regularizer import RegularizeDP
 
 
-@lru_cache(maxsize=4)
+SKIP_SCALED_DOT_PRODUCT_ATTENTION: bool = False
+
+
+@lru_cache(maxsize=16)
 @torch.no_grad()
-def _get_thetas(dim: int, height: int, width: int, frequency: float = 10000.0) -> torch.Tensor:
+def _get_thetas(
+    dim: int,
+    height: int,
+    width: int,
+    frequency: float,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
     """Get thetas for the 2D tensor.
 
     Args:
@@ -19,26 +29,24 @@ def _get_thetas(dim: int, height: int, width: int, frequency: float = 10000.0) -
         height (int): height of the image after patching
         width (int): width of the image after patching
         frequency (float): frequency for the RoPE embeddings
+        device (torch.device): target device
+        dtype (torch.dtype): target dtype
     """
     if dim % 2 != 0:
         raise ValueError("Embedding dimension must be even for RoPE")
 
-    # calculate frequency bands
-    # each dimension pair gets a different frequency
-    freq_bands = torch.arange(dim // 2, dtype=torch.float32) / (dim // 2)
+    freq_bands = torch.arange(dim // 2, dtype=torch.float32, device=device) / (dim // 2)
     ifreq = 1.0 / (frequency**freq_bands)  # (dim // 2,)
 
-    # build 2D grid frequencies
-    coords_h = torch.arange(height, dtype=torch.float32)
-    coords_w = torch.arange(width, dtype=torch.float32)
+    coords_h = torch.arange(height, dtype=torch.float32, device=device)
+    coords_w = torch.arange(width, dtype=torch.float32, device=device)
     freqs_h = torch.einsum("i,j->ij", coords_h, ifreq)  # [height, dim//2]
     freqs_w = torch.einsum("i,j->ij", coords_w, ifreq)  # [width, dim//2]
 
-    # merge to [height, width, dim]
     theta_h = freqs_h.unsqueeze(1).repeat(1, width, 1)
     theta_w = freqs_w.unsqueeze(0).repeat(height, 1, 1)
     theta = torch.cat([theta_h, theta_w], dim=-1)  # [height, width, dim]
-    return theta.view(-1, dim)
+    return theta.view(-1, dim).to(dtype=dtype)
 
 
 def add_rope_embeddings(
@@ -57,7 +65,7 @@ def add_rope_embeddings(
         width (int): width of the image after patching
         frequency (float): frequency for the RoPE embeddings
     """
-    theta = _get_thetas(tensor.size(-1), height, width, frequency).to(device=tensor.device, dtype=tensor.dtype)
+    theta = _get_thetas(tensor.size(-1), height, width, frequency, tensor.device, tensor.dtype)
     if indices_to_keep is not None:
         theta = theta.unsqueeze(0).repeat(tensor.shape[0], 1, 1)
         theta = mask_utils.mask_tensor(theta, indices_to_keep=indices_to_keep)
@@ -132,7 +140,7 @@ class Attention(BaseLayer):
                 q = add_rope_embeddings(q, indices_to_keep, height, width, self.frequency)
                 k = add_rope_embeddings(k, indices_to_keep, height, width, self.frequency)
 
-        if hasattr(torch.nn.functional, "scaled_dot_product_attention"):
+        if not SKIP_SCALED_DOT_PRODUCT_ATTENTION:
             o = torch.nn.functional.scaled_dot_product_attention(q, k, v, dropout_p=0.0)
         else:
             attn = ((q @ k.transpose(-2, -1)) * self.scale).softmax(dim=-1)
@@ -258,7 +266,7 @@ class CrossAttention(torch.nn.Module):
         return self.o(o.transpose(1, 2).reshape(b, n, c))
 
 
-class CrossAttenttionLayer(torch.nn.Module):
+class CrossAttentionLayer(torch.nn.Module):
     """Cross-attention layer.
 
     Args:

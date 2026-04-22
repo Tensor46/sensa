@@ -55,7 +55,7 @@ class RandomHorizontalFlip(TT.RandomHorizontalFlip):
                 if "masks" in target:
                     torch._assert(
                         isinstance(target["masks"], tv.tv_tensors.Mask),
-                        f"{self.__class__.__name__}: boxes must be tv.tv_tensors.Mask",
+                        f"{self.__class__.__name__}: masks must be tv.tv_tensors.Mask",
                     )
                     target["masks"] = target["masks"].flip(-1)
 
